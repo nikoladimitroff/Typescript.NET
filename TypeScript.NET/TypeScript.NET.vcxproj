@@ -66,14 +66,17 @@
   <ItemGroup>
     <ClCompile Include="LexicalAnalyzer.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="ParserHelper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Sample.ts" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="LexicalAnalyzer.h" />
+    <ClInclude Include="ParserHelper.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Token.h" />
+    <ClInclude Include="Utilities.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

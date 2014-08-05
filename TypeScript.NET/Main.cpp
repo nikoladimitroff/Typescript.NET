@@ -1,7 +1,10 @@
 #include <iostream>
 #include <fstream>
+#include <sstream>
+#include <iterator>
 
 #include "LexicalAnalyzer.h"
+#include "ParserHelper.h"
 
 using namespace std;
 
@@ -46,15 +49,30 @@ string read_file_to_end(const string& path)
 
 int main()
 {
+	// Lexical Analysis
 
-	string filePath = "Sample.ts";
+	/*string filePath = "Sample.ts";
 
 	LexicalAnalyzer lex;
 	auto tokens = lex.Tokenize(read_file_to_end(filePath));
 	for (Token t : tokens)
 	{
 		cout << t << endl;
-	}
+	}*/
+
+
+	// First
+	map<string, vector<vector<string>>> rules = {
+			{ "E", { { "T", "E'" } } },
+			{ "E'", { { "+", "T", "E'" }, { EPSILON() } } },
+			{ "T", { { "F", "T'" } } },
+			{ "T'", { { "*", "F", "T'" }, { EPSILON() } } },
+			{ "F", { { "(", "E", ")" }, { "id" } } }
+	};
+
+	Grammar g(rules);
+	cout << g;
+
 
 	cout << endl << "Press any key to continue" << endl;
 	cin.get();
