@@ -6,13 +6,13 @@
 
 using namespace std;
 
-const string& EPSILON()
+inline const string& EPSILON()
 {
 	static const std::string epsilon = "EPSILON";
 	return epsilon;
 }
 
-const string& ENDMARKER()
+inline const string& ENDMARKER()
 {
 	static const std::string endmarker = "ENDMARKER";
 	return endmarker;
@@ -26,6 +26,9 @@ Grammar::Grammar(std::map<std::string, RuleList> rules)
 
 	for (auto& pair : this->rules)
 	{
+		if (this->startSymbol.length() == 0)
+			this->startSymbol = pair.first;
+
 		this->nonterminals.insert(pair.first);
 		symbols.insert(pair.first);
 
@@ -42,6 +45,7 @@ Grammar::Grammar(std::map<std::string, RuleList> rules)
 		inserter(this->terminals, terminals.begin()));
 
 	this->ComputeFirst();
+	this->ComputeFollow();
 }
 
 
@@ -107,17 +111,28 @@ void Grammar::ComputeFirst()
 
 ostream& operator<<(ostream& stream, const Grammar& g)
 {
+	stream << "FIRST: " << endl;
 	for (auto pair : g.first)
 	{
 		stream << pair.first << " -> ";
 		JoinCollection(pair.second, stream) << endl;
 	}
+
+	stream << "FOLLOW: " << endl;
+	for (auto pair : g.follow)
+	{
+		stream << pair.first << " -> ";
+		JoinCollection(pair.second, stream) << endl;
+	}
+
 	return stream;
 }
 
 
 set<string> Grammar::ComputeFirstWord(const vector<string>& word)
 {
+	if (word.size() == 0) return set<string>();
+
 	set<string> wordFirst;
 	int index = 0;
 	string current = word[index];
@@ -140,4 +155,67 @@ set<string> Grammar::ComputeFirstWord(const vector<string>& word)
 			wordFirst.erase(iter);
 	}
 	return wordFirst;
+}
+
+
+int Grammar::ComputeFollowStep(std::string symbol)
+{
+	RuleList& symbolRules = this->rules[symbol];
+	if (this->follow.find(symbol) == this->follow.end())
+	{
+		this->first[symbol] = set<string>();
+		return 1;
+	}
+	int added = 0;
+	for (auto& rhs : symbolRules)
+	{
+		for (auto it = rhs.begin(); it != rhs.end(); ++it)
+		{
+			if (this->nonterminals.find(*it) != this->nonterminals.end())
+			{
+				int currentSize = this->follow[*it].size();
+				bool isLast = it + 1 == rhs.end();
+				vector<string> beta(it + 1, rhs.end());
+				auto firstBeta = this->ComputeFirstWord(beta);
+				// Case 2
+				if (!isLast)
+				{
+					this->follow[*it].insert(firstBeta.begin(), firstBeta.end());
+				}
+
+				// Case 3
+				bool followedByEpsilon = firstBeta.find(EPSILON()) != firstBeta.end();
+				if (isLast || followedByEpsilon)
+				{
+					this->follow[*it].insert(this->follow[symbol].begin(), this->follow[symbol].end());
+				}
+				added += this->follow[*it].size() - currentSize;
+			}
+		}
+	}
+	return added;
+}
+
+void Grammar::ComputeFollow()
+{
+	this->follow[this->startSymbol] = { ENDMARKER() };
+	set<string> epsilonSet = { EPSILON() };
+
+	int added = 0;
+	do
+	{
+		added = 0;
+		for (auto& nonterminal : this->nonterminals)
+		{
+			added += this->ComputeFollowStep(nonterminal);
+		}
+	} while (added != 0);
+
+	// remove all epsilons
+	for (auto& pair : this->follow)
+	{
+		auto iter = pair.second.find(EPSILON());
+		if (iter != pair.second.end())
+			pair.second.erase(iter);
+	}
 }

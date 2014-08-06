@@ -32,13 +32,17 @@ private:
 	std::map<std::string, RuleList> rules;
 	std::set<std::string> terminals;
 	std::set<std::string> nonterminals;
+	std::string startSymbol;
 
 
 	int ComputeFirstStep(std::string symbol);
 	void ComputeFirst();
+	int ComputeFollowStep(std::string symbol);
+	void ComputeFollow();
 public:
 
 	std::map<std::string, std::set<std::string>> first;
+	std::map<std::string, std::set<std::string>> follow;
 
 	Grammar(std::map<std::string, RuleList> RuleList);
 	std::set<std::string> ComputeFirstWord(const std::vector<std::string>& word);
