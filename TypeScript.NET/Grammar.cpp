@@ -1,34 +1,50 @@
-#include "ParserHelper.h"
-#include "Utilities.h"
-
 #include <algorithm>
 #include <sstream>
+#include <iterator>
+
+#include "Grammar.h"
+#include "Utilities.h"
+
 
 using namespace std;
 
-inline const string& EPSILON()
+
+bool operator<(const Item& first, const Item& second)
 {
-	static const std::string epsilon = "EPSILON";
+	return first.ProductionHead < second.ProductionHead &&
+		first.RuleIndex < second.RuleIndex &&
+		first.DotIndex < second.RuleIndex;
+}
+
+
+inline const string EPSILON()
+{
+	const std::string epsilon = "EPSILON";
 	return epsilon;
 }
 
-inline const string& ENDMARKER()
+inline const string ENDMARKER()
 {
-	static const std::string endmarker = "ENDMARKER";
+	const std::string endmarker = "ENDMARKER";
+	return endmarker;
+}
+
+inline const string AUGMENTED_START()
+{
+	const std::string endmarker = "AUGMENTED_START";
 	return endmarker;
 }
 
 
-Grammar::Grammar(std::map<std::string, RuleList> rules)
+Grammar::Grammar(string start, map<string, RuleList> rules, bool shouldAugment)
 {
+	this->startSymbol = start;
 	this->rules = rules;
+
 	set<string> symbols;
 
 	for (auto& pair : this->rules)
 	{
-		if (this->startSymbol.length() == 0)
-			this->startSymbol = pair.first;
-
 		this->nonterminals.insert(pair.first);
 		symbols.insert(pair.first);
 
@@ -43,6 +59,18 @@ Grammar::Grammar(std::map<std::string, RuleList> rules)
 	set_difference(symbols.begin(), symbols.end(),
 		this->nonterminals.begin(), this->nonterminals.end(),
 		inserter(this->terminals, terminals.begin()));
+
+
+	if (shouldAugment)
+	{
+		/*this->rules.insert(this->rules.begin(), { AUGMENTED_START(), { AUGMENTED_START(), this->startSymbol } });*/
+		auto& augmented = AUGMENTED_START();
+		vector<string> rule = { this->startSymbol };
+		this->rules[augmented] = { rule };
+		this->nonterminals.insert(augmented);
+		this->terminals.insert(ENDMARKER());
+		this->startSymbol = augmented;
+	}
 
 	this->ComputeFirst();
 	this->ComputeFollow();
@@ -163,7 +191,7 @@ int Grammar::ComputeFollowStep(std::string symbol)
 	RuleList& symbolRules = this->rules[symbol];
 	if (this->follow.find(symbol) == this->follow.end())
 	{
-		this->first[symbol] = set<string>();
+		this->follow[symbol] = set<string>();
 		return 1;
 	}
 	int added = 0;
@@ -219,3 +247,49 @@ void Grammar::ComputeFollow()
 			pair.second.erase(iter);
 	}
 }
+
+
+set<Item>& Grammar::Closure(set<Item>& setOfItems)
+{
+	// See page 261
+	int added = 0;
+	do
+	{
+		int currentSize = setOfItems.size();
+		for (auto& item : setOfItems)
+		{
+			RuleBody& body = this->rules[item.ProductionHead][item.RuleIndex];
+			const string& nonterminal = body[item.DotIndex];
+			if (this->nonterminals.find(nonterminal) == this->nonterminals.end())
+			{
+				continue;
+			}
+
+			RuleBody tail(body.begin() + item.DotIndex + 1, body.end());
+			tail.push_back(item.Lookahead);
+			auto firstTail = this->ComputeFirstWord(tail);
+			auto& bodies = this->rules[nonterminal];
+			for (auto it = bodies.begin(); it != bodies.end(); it++)
+			{
+				for (auto& terminal : firstTail)
+				{
+					Item newItem;
+					newItem.ProductionHead = nonterminal;
+					newItem.Lookahead = terminal;
+					newItem.RuleIndex = distance(it, bodies.begin());
+					newItem.DotIndex = 0;
+					setOfItems.insert(newItem);/*t,jgrtjhrthgrtj*/
+				}
+			}
+		}
+		added += setOfItems.size() - currentSize;
+
+	} while (added != 0);
+	return setOfItems;
+}
+
+set<Item> GoTo(const std::set<Item>& setOfItems, const std::string& terminal)
+{
+	return set<Item>();
+}
+void ComputeItems();

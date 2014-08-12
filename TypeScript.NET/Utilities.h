@@ -1,5 +1,18 @@
 #pragma once
 #include <ostream>
+#if defined(_WIN32)
+	#define export __declspec(dllexport)
+	#define import __declspec(dllimport)
+#else
+	#define export __attribute__ ((visibility ("default")))
+	#define import
+#endif
+
+#if defined(CLIENT_CODE)
+	#define dllspec import
+#else
+	#define dllspec export
+#endif
 
 template<typename T>
 std::ostream& JoinCollection(const T& collection, std::ostream& stream)

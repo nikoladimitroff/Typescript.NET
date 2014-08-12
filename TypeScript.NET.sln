@@ -5,6 +5,11 @@ VisualStudioVersion = 12.0.30501.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TypeScript.NET", "TypeScript.NET\TypeScript.NET.vcxproj", "{443B1B51-887E-4F69-9A15-B838A4635D8A}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Typescript.NET.Tests", "Typescript.NET.Tests\Typescript.NET.Tests.vcxproj", "{624E73F6-72AA-4965-BE5F-DB7FA074CADB}"
+	ProjectSection(ProjectDependencies) = postProject
+		{443B1B51-887E-4F69-9A15-B838A4635D8A} = {443B1B51-887E-4F69-9A15-B838A4635D8A}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -15,6 +20,10 @@ Global
 		{443B1B51-887E-4F69-9A15-B838A4635D8A}.Debug|Win32.Build.0 = Debug|Win32
 		{443B1B51-887E-4F69-9A15-B838A4635D8A}.Release|Win32.ActiveCfg = Release|Win32
 		{443B1B51-887E-4F69-9A15-B838A4635D8A}.Release|Win32.Build.0 = Release|Win32
+		{624E73F6-72AA-4965-BE5F-DB7FA074CADB}.Debug|Win32.ActiveCfg = Debug|Win32
+		{624E73F6-72AA-4965-BE5F-DB7FA074CADB}.Debug|Win32.Build.0 = Debug|Win32
+		{624E73F6-72AA-4965-BE5F-DB7FA074CADB}.Release|Win32.ActiveCfg = Release|Win32
+		{624E73F6-72AA-4965-BE5F-DB7FA074CADB}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

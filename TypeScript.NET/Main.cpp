@@ -3,8 +3,11 @@
 #include <sstream>
 #include <iterator>
 
+#undef CLIENT_CODE
+
 #include "LexicalAnalyzer.h"
-#include "ParserHelper.h"
+#include "Grammar.h"
+#include "Utilities.h"
 
 using namespace std;
 
@@ -49,29 +52,29 @@ string read_file_to_end(const string& path)
 
 int main()
 {
-	// Lexical Analysis
-
-	/*string filePath = "Sample.ts";
-
-	LexicalAnalyzer lex;
-	auto tokens = lex.Tokenize(read_file_to_end(filePath));
-	for (Token t : tokens)
-	{
-		cout << t << endl;
-	}*/
 
 
-	// First
-	map<string, vector<vector<string>>> rules = {
-			{ "E", { { "T", "E'" } } },
-			{ "E'", { { "+", "T", "E'" }, { EPSILON() } } },
-			{ "T", { { "F", "T'" } } },
-			{ "T'", { { "*", "F", "T'" }, { EPSILON() } } },
-			{ "F", { { "(", "E", ")" }, { "id" } } }
+	map<string, vector<vector<string>>> rules2 = {
+			{ "S", { { "C", "C'" } } },
+			{ "C", { { "c", "C" }, { "D" } } },
 	};
 
-	Grammar g(rules);
-	cout << g;
+	Grammar g("S", rules2, true);
+	Item i;
+	i.DotIndex = 0;
+	i.Lookahead = ENDMARKER();
+	i.ProductionHead = "AUGMENTED_START";
+	i.RuleIndex = 0;
+	set<Item> s = { i };
+	g.Closure(s);
+	for (auto& i : s)
+	{
+		vector<string> body = g.rules[i.ProductionHead][i.RuleIndex];
+		vector<string> firstHalf(body.begin(), body.begin() + i.DotIndex);
+		vector<string> secondHalf(body.begin() + i.DotIndex + 1, body.end());
+		cout << i.ProductionHead << " -> "; 
+		JoinCollection(secondHalf, JoinCollection(firstHalf, cout) << "@") << endl;
+	}
 
 
 	cout << endl << "Press any key to continue" << endl;

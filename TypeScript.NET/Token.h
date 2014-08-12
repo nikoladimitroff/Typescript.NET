@@ -3,10 +3,43 @@
 #include <regex>
 #include <vector>
 
-enum class TokenTag
+#include "Utilities.h"
+
+enum class dllspec TokenTag
 {
+	KeywordVar,
+	KeywordIf,
+	KeywordElseIf,
+	KeywordElse,
+	KeywordFor,
+	KeywordWhile,
+	KeywordContinue,
+	KeywordSwitch,
+	KeywordCase,
+	KeywordDefault,
+	KeywordBreak,
+	KeywordReturn,
+	KeywordModule,
+	KeywordClass,
+	KeywordInterface,
+
 	Id,
-	Keyword,
+
+	LeftParenthesis,
+	RightParenthesis,
+	LeftSquareBracket,
+	RightSquareBracket,
+	LeftBrace,
+	RightBrace,
+
+	Dot,
+	Comma,
+	Colon,
+	Semicolon,
+
+	UnaryOp,
+	BinaryOp,
+
 	Whitespace,
 	Comment,
 	Number,
@@ -14,15 +47,45 @@ enum class TokenTag
 	Assignment,
 	RelativeOp,
 	BoolOp,
-	SpecialCharacter,
 	EndOfFile
 };
 
 namespace
 {
 	const std::string tagLabels[] = {
+		"KeywordVar",
+		"KeywordIf",
+		"KeywordElseIf",
+		"KeywordElse",
+		"KeywordFor",
+		"KeywordWhile",
+		"KeywordContinue",
+		"KeywordSwitch",
+		"KeywordCase",
+		"KeywordDefault",
+		"KeywordBreak",
+		"KeywordReturn",
+		"KeywordModule",
+		"KeywordClass",
+		"KeywordInterface",
+		
 		"Id",
-		"Keyword",
+		
+		"LeftParenthesis",
+		"RightParenthesis",
+		"LeftSquareBracket",
+		"RightSquareBracket",
+		"LeftBrace",
+		"RightBrace",
+		
+		"Dot",
+		"Comma",
+		"Colon",
+		"Semicolon",
+		
+		"UnaryOp",
+		"BinaryOp",
+		
 		"Whitespace",
 		"Comment",
 		"Number",
@@ -30,12 +93,11 @@ namespace
 		"Assignment",
 		"RelativeOp",
 		"BoolOp",
-		"SpecialCharacter",
 		"EndOfFile"
 	};
 }
 
-class Token
+class dllspec Token
 {
 private:
 	std::string lexeme;
@@ -59,8 +121,20 @@ public:
 };
 
 
-inline std::ostream&  operator<<(std::ostream& o, const Token& token)
+dllspec inline std::ostream&  operator<<(std::ostream& o, const Token& token)
 {
-	o << "<" << tagLabels[static_cast<int>(token.GetTag())] << ", " << token.GetLexeme() << ">";
+	o << token.GetLexeme();
+	//o << tagLabels[static_cast<int>(token.GetTag())];
+	//o << "<" << tagLabels[static_cast<int>(token.GetTag())] << ", " << token.GetLexeme() << ">";
 	return o;
+}
+
+dllspec inline bool operator==(const Token& lhs, const Token& rhs)
+{
+	return  lhs.GetTag() == rhs.GetTag() && lhs.GetLexeme() == rhs.GetLexeme();
+}
+
+dllspec inline bool operator!=(const Token& lhs, const Token& rhs)
+{
+	return !(lhs == rhs);
 }

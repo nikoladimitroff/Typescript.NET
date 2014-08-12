@@ -1,19 +1,21 @@
 #pragma once
-#include "Token.h"
 #include <string>
 #include <regex>
 #include <vector>
 
+#include "Token.h"
+#include "Utilities.h"
+
+
 class LexicalAnalyzer
 {
 private:
-	std::vector<std::pair<std::regex, TokenTag>>& patternToTag;
+	std::vector<std::pair<std::regex, TokenTag>> patternToTag;
 
 	Token NextMatch(const std::string& text, int offset) const;
-
 public:
-	LexicalAnalyzer();
+	dllspec LexicalAnalyzer();
 
-	std::vector<Token> Tokenize(const std::string& text) const;
+	dllspec std::vector<Token> Tokenize(const std::string& text) const;
+	dllspec std::vector<Token> Tokenize(const std::string& text, bool skipWhitespaceComments) const;
 };
-
