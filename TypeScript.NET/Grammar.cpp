@@ -9,11 +9,21 @@
 using namespace std;
 
 
+Item::Item(const string& productionHead, const string& lookahead, const int ruleIndex, const int dotIndex)
+{
+	this->ProductionHead = productionHead;
+	this->Lookahead = lookahead;
+	this->RuleIndex = ruleIndex;
+	this->DotIndex = dotIndex;
+}
+
+
 bool operator<(const Item& first, const Item& second)
 {
-	return first.ProductionHead < second.ProductionHead &&
-		first.RuleIndex < second.RuleIndex &&
-		first.DotIndex < second.RuleIndex;
+	if (first.ProductionHead != second.ProductionHead) return first.ProductionHead < second.ProductionHead;
+	if (first.Lookahead != second.Lookahead) return first.Lookahead < second.Lookahead;
+	if (first.RuleIndex != second.RuleIndex) return first.RuleIndex < second.RuleIndex;
+	return first.DotIndex != second.DotIndex;
 }
 
 
@@ -63,7 +73,6 @@ Grammar::Grammar(string start, map<string, RuleList> rules, bool shouldAugment)
 
 	if (shouldAugment)
 	{
-		/*this->rules.insert(this->rules.begin(), { AUGMENTED_START(), { AUGMENTED_START(), this->startSymbol } });*/
 		auto& augmented = AUGMENTED_START();
 		vector<string> rule = { this->startSymbol };
 		this->rules[augmented] = { rule };
@@ -90,7 +99,7 @@ int Grammar::ComputeFirstStep(string symbol)
 		{
 			this->first[symbol].insert(EPSILON());
 		}
-		return this->first[symbol].size();
+		return 1;
 	}
 	int currentSize = this->first[symbol].size();
 	for (auto& rhs : symbolRules)
@@ -252,9 +261,10 @@ void Grammar::ComputeFollow()
 set<Item>& Grammar::Closure(set<Item>& setOfItems)
 {
 	// See page 261
-	int added = 0;
+	int added;
 	do
 	{
+		added = 0;
 		int currentSize = setOfItems.size();
 		for (auto& item : setOfItems)
 		{
@@ -273,11 +283,8 @@ set<Item>& Grammar::Closure(set<Item>& setOfItems)
 			{
 				for (auto& terminal : firstTail)
 				{
-					Item newItem;
-					newItem.ProductionHead = nonterminal;
-					newItem.Lookahead = terminal;
-					newItem.RuleIndex = distance(it, bodies.begin());
-					newItem.DotIndex = 0;
+					int ruleIndex = distance(bodies.begin(), it);
+					Item newItem(nonterminal, terminal, ruleIndex, 0);
 					setOfItems.insert(newItem);/*t,jgrtjhrthgrtj*/
 				}
 			}

@@ -15,9 +15,14 @@ struct dllspec Item
 		DotIndex;
 	std::string ProductionHead;
 	std::string Lookahead;
-};
 
-dllspec bool operator<(const Item& first, const Item& second);
+	Item(const std::string& productionHead, 
+		const std::string& lookahead, 
+		const int ruleIndex, 
+		const int dotIndex);
+
+	friend bool operator<(const Item& first, const Item& second);
+};
 
 dllspec const std::string EPSILON();
 dllspec const std::string ENDMARKER();
@@ -26,9 +31,6 @@ dllspec const std::string AUGMENTED_START();
 class Grammar
 {
 private:
-	std::set<std::string> terminals;
-	std::set<std::string> nonterminals;
-	std::string startSymbol;
 
 
 	int ComputeFirstStep(std::string symbol);
@@ -41,6 +43,11 @@ public:
 
 	typedef std::vector<std::string> RuleBody;
 	typedef std::vector<RuleBody> RuleList;
+
+
+	std::set<std::string> terminals;
+	std::set<std::string> nonterminals;
+	std::string startSymbol;
 
 	std::map<std::string, RuleList> rules;
 	std::map<std::string, std::set<std::string>> first;

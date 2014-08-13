@@ -55,12 +55,12 @@ int main()
 
 
 	map<string, vector<vector<string>>> rules2 = {
-			{ "S", { { "C", "C'" } } },
-			{ "C", { { "c", "C" }, { "D" } } },
+			{ "S", { { "C", "C" } } },
+			{ "C", { { "c", "C" }, { "d" } } },
 	};
 
 	Grammar g("S", rules2, true);
-	Item i;
+	Item i(AUGMENTED_START(), ENDMARKER(), 0, 0);
 	i.DotIndex = 0;
 	i.Lookahead = ENDMARKER();
 	i.ProductionHead = "AUGMENTED_START";
@@ -71,9 +71,9 @@ int main()
 	{
 		vector<string> body = g.rules[i.ProductionHead][i.RuleIndex];
 		vector<string> firstHalf(body.begin(), body.begin() + i.DotIndex);
-		vector<string> secondHalf(body.begin() + i.DotIndex + 1, body.end());
+		vector<string> secondHalf(body.begin() + i.DotIndex, body.end());
 		cout << i.ProductionHead << " -> "; 
-		JoinCollection(secondHalf, JoinCollection(firstHalf, cout) << "@") << endl;
+		JoinCollection(secondHalf, JoinCollection(firstHalf, cout) << "@") << " | " << i.Lookahead << endl;
 	}
 
 
