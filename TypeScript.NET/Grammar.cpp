@@ -23,7 +23,20 @@ bool operator<(const Item& first, const Item& second)
 	if (first.ProductionHead != second.ProductionHead) return first.ProductionHead < second.ProductionHead;
 	if (first.Lookahead != second.Lookahead) return first.Lookahead < second.Lookahead;
 	if (first.RuleIndex != second.RuleIndex) return first.RuleIndex < second.RuleIndex;
-	return first.DotIndex != second.DotIndex;
+	return first.DotIndex < second.DotIndex;
+}
+
+bool operator==(const Item& first, const Item& second)
+{
+	return first.ProductionHead == second.ProductionHead &&
+		first.Lookahead == second.Lookahead &&
+		first.RuleIndex == second.RuleIndex &&
+		first.DotIndex == second.DotIndex;
+}
+
+bool operator!=(const Item& first, const Item& second)
+{
+	return !(first == second);
 }
 
 
@@ -269,6 +282,8 @@ set<Item>& Grammar::Closure(set<Item>& setOfItems)
 		for (auto& item : setOfItems)
 		{
 			RuleBody& body = this->rules[item.ProductionHead][item.RuleIndex];
+			if (item.DotIndex >= body.size()) continue;
+
 			const string& nonterminal = body[item.DotIndex];
 			if (this->nonterminals.find(nonterminal) == this->nonterminals.end())
 			{
@@ -295,8 +310,77 @@ set<Item>& Grammar::Closure(set<Item>& setOfItems)
 	return setOfItems;
 }
 
-set<Item> GoTo(const std::set<Item>& setOfItems, const std::string& terminal)
+
+void PrintClosure(const std::set<Item>& items, Grammar& g)
 {
-	return set<Item>();
+	for (auto& i : items)
+	{
+		vector<string> body = g.rules[i.ProductionHead][i.RuleIndex];
+		vector<string> firstHalf(body.begin(), body.begin() + i.DotIndex);
+		vector<string> secondHalf(body.begin() + i.DotIndex, body.end());
+		cout << i.ProductionHead << " -> ";
+		JoinCollection(secondHalf, JoinCollection(firstHalf, cout) << "@") << " | " << i.Lookahead << endl;
+	}
 }
-void ComputeItems();
+
+set<Item> Grammar::GoTo(const std::set<Item>& setOfItems, const std::string& symbol)
+{
+	set<Item> gotoset;
+	for (const Item& item : setOfItems)
+	{
+		auto& ruleBody = this->rules[item.ProductionHead][item.RuleIndex];
+		if (item.DotIndex >= ruleBody.size()) continue;
+		string& beforeDotSymbol = ruleBody[item.DotIndex];
+		if (beforeDotSymbol == symbol)
+		{
+			Item newItem(item.ProductionHead, item.Lookahead, item.RuleIndex, item.DotIndex + 1);
+			gotoset.insert(newItem);
+		}
+	}
+	return this->Closure(gotoset);
+}
+
+void Grammar::ComputeItems()
+{
+	Item i(AUGMENTED_START(), ENDMARKER(), 0, 0);
+	i.DotIndex = 0;
+	i.Lookahead = ENDMARKER();
+	i.ProductionHead = AUGMENTED_START();
+	i.RuleIndex = 0;
+	set<Item> startSet = { i };
+	this->items.clear();
+	this->items.push_back(this->Closure(startSet));
+
+	int added;
+	do
+	{
+		added = 0;
+		int size = this->items.size();
+
+		for (int i = 0; i < size; i++)
+		{
+			for (auto& nonterminal : this->nonterminals)
+			{
+				auto gotoset = this->GoTo(this->items[i], nonterminal);
+				auto it = find(this->items.begin(), this->items.end(), gotoset);
+				if (gotoset.size() != 0 && it == this->items.end())
+				{
+					this->items.push_back(gotoset);
+					//this->gotoTable[make_pair(i, nonterminal)] = this->items.size() - 1;
+				}
+			}
+			for (auto& terminal : this->terminals)
+			{
+				auto gotoset = this->GoTo(this->items[i], terminal);
+				auto it = find(this->items.begin(), this->items.end(), gotoset);
+				if (gotoset.size() != 0 && it == this->items.end())
+				{
+					this->items.push_back(gotoset);
+					//this->gotoTable[make_pair(i, terminal)] = this->items.size() - 1;
+				}
+			}
+		}
+
+		added = this->items.size() - size;
+	} while (added != 0);
+}

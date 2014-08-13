@@ -21,7 +21,9 @@ struct dllspec Item
 		const int ruleIndex, 
 		const int dotIndex);
 
-	friend bool operator<(const Item& first, const Item& second);
+	dllspec friend bool operator<(const Item& first, const Item& second);
+	dllspec friend bool operator==(const Item& first, const Item& second);
+	dllspec friend bool operator!=(const Item& first, const Item& second);
 };
 
 dllspec const std::string EPSILON();
@@ -37,8 +39,6 @@ private:
 	void ComputeFirst();
 	int ComputeFollowStep(std::string symbol);
 	void ComputeFollow();
-	std::set<Item> GoTo(const std::set<Item>& setOfItems, const std::string& terminal);
-	void ComputeItems();
 public:
 
 	typedef std::vector<std::string> RuleBody;
@@ -52,9 +52,15 @@ public:
 	std::map<std::string, RuleList> rules;
 	std::map<std::string, std::set<std::string>> first;
 	std::map<std::string, std::set<std::string>> follow;
+	std::vector<std::set<Item>> items;
+	std::map<std::pair<int, std::string>, int> gotoTable;
 
 	dllspec Grammar(std::string start, std::map<std::string, RuleList> RuleList, bool shouldAugment);
 	dllspec std::set<std::string> ComputeFirstWord(const std::vector<std::string>& word);
 	dllspec friend std::ostream& operator<<(std::ostream& stream, const Grammar& grammar);
 	dllspec std::set<Item>& Closure(std::set<Item>& setOfItems);
+	dllspec std::set<Item> GoTo(const std::set<Item>& setOfItems, const std::string& terminal);
+	dllspec void ComputeItems();
 };
+
+dllspec void PrintClosure(const std::set<Item>& items, Grammar& g);

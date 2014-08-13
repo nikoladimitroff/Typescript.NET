@@ -50,32 +50,42 @@ string read_file_to_end(const string& path)
 	return text;
 }
 
+
 int main()
 {
 
 
-	map<string, vector<vector<string>>> rules2 = {
+	map<string, vector<vector<string>>> rules = {
 			{ "S", { { "C", "C" } } },
 			{ "C", { { "c", "C" }, { "d" } } },
 	};
 
-	Grammar g("S", rules2, true);
-	Item i(AUGMENTED_START(), ENDMARKER(), 0, 0);
+	Grammar g("S", rules, true);
+
+	/*Item i(AUGMENTED_START(), ENDMARKER(), 0, 0);
 	i.DotIndex = 0;
 	i.Lookahead = ENDMARKER();
-	i.ProductionHead = "AUGMENTED_START";
+	i.ProductionHead = AUGMENTED_START();
 	i.RuleIndex = 0;
-	set<Item> s = { i };
-	g.Closure(s);
-	for (auto& i : s)
-	{
-		vector<string> body = g.rules[i.ProductionHead][i.RuleIndex];
-		vector<string> firstHalf(body.begin(), body.begin() + i.DotIndex);
-		vector<string> secondHalf(body.begin() + i.DotIndex, body.end());
-		cout << i.ProductionHead << " -> "; 
-		JoinCollection(secondHalf, JoinCollection(firstHalf, cout) << "@") << " | " << i.Lookahead << endl;
-	}
+	set<Item> actual = { i };
+	g.Closure(actual);
 
+	cout << "S:" << endl;
+	PrintClosure(g.GoTo(actual, "S"), g);
+	cout << "C:" << endl;
+	PrintClosure(g.GoTo(actual, "C"), g);
+	cout << "c:" << endl;
+	PrintClosure(g.GoTo(actual, "c"), g);
+	cout << "d:" << endl;
+	PrintClosure(g.GoTo(actual, "d"), g);
+*/
+
+	g.ComputeItems();
+	for (int i = 0; i < g.items.size(); i++)
+	{
+		cout << "I" << i << " -----------" << endl;
+		PrintClosure(g.items[i] , g);
+	}
 
 	cout << endl << "Press any key to continue" << endl;
 	cin.get();
