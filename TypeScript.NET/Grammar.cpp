@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <sstream>
 #include <iterator>
+#include <functional>
 
 #include "Grammar.h"
 #include "Utilities.h"
@@ -340,6 +341,16 @@ set<Item> Grammar::GoTo(const std::set<Item>& setOfItems, const std::string& sym
 	return this->Closure(gotoset);
 }
 
+set<string> Grammar::GetSymbols()
+{
+	set<string> symbols;
+	auto inserter = std::inserter(symbols, symbols.end());
+	copy(this->nonterminals.begin(), this->nonterminals.end(), inserter);
+	copy(this->terminals.begin(), this->terminals.end(), inserter);
+
+	return symbols;
+}
+
 void Grammar::ComputeItems()
 {
 	Item i(AUGMENTED_START(), ENDMARKER(), 0, 0);
@@ -351,6 +362,8 @@ void Grammar::ComputeItems()
 	this->items.clear();
 	this->items.push_back(this->Closure(startSet));
 
+	set<string> symbols = this->GetSymbols();
+
 	int added;
 	do
 	{
@@ -359,28 +372,99 @@ void Grammar::ComputeItems()
 
 		for (int i = 0; i < size; i++)
 		{
-			for (auto& nonterminal : this->nonterminals)
+			for (auto& symbol : symbols)
 			{
-				auto gotoset = this->GoTo(this->items[i], nonterminal);
-				auto it = find(this->items.begin(), this->items.end(), gotoset);
-				if (gotoset.size() != 0 && it == this->items.end())
+				auto gotoset = this->GoTo(this->items[i], symbol);
+				if (gotoset.size() != 0)
 				{
-					this->items.push_back(gotoset);
-					//this->gotoTable[make_pair(i, nonterminal)] = this->items.size() - 1;
-				}
-			}
-			for (auto& terminal : this->terminals)
-			{
-				auto gotoset = this->GoTo(this->items[i], terminal);
-				auto it = find(this->items.begin(), this->items.end(), gotoset);
-				if (gotoset.size() != 0 && it == this->items.end())
-				{
-					this->items.push_back(gotoset);
-					//this->gotoTable[make_pair(i, terminal)] = this->items.size() - 1;
+					auto it = find(this->items.begin(), this->items.end(), gotoset);
+					int index = std::distance(this->items.begin(), it);
+					if (it == this->items.end())
+					{
+						this->items.push_back(gotoset);
+						index = this->items.size() - 1;
+					}
+					auto pair = make_pair(i, symbol);
+					this->gotoTable[pair] = index;
 				}
 			}
 		}
 
 		added = this->items.size() - size;
 	} while (added != 0);
+}
+
+int ComputeItemSetCoreHash(const set<Item>& items)
+{
+	static hash<string> hashString;
+	set<unsigned long> totalHash;
+
+	for (const Item& item : items)
+	{
+		unsigned long hash = 23;
+		hash = hash * 31 + hashString(item.ProductionHead);
+		hash = hash * 31 + item.RuleIndex;
+		hash = hash * 31 + item.DotIndex;
+
+		totalHash.insert(hash);
+	}
+
+	unsigned long finalHash = 23;
+	for (auto hash : totalHash)
+	{
+		finalHash = finalHash * 31 + hash;
+	}
+	return finalHash;
+}
+
+void Grammar::ComputeLR1Items()
+{
+	map<unsigned long, vector<int>> groups;
+	// Start from the 2nd item since we want to preserve the I0 at index 0 in the merged set
+	for (auto i = 0; i < this->items.size(); i++)
+	{
+		auto hash = ComputeItemSetCoreHash(this->items[i]);
+		groups[hash].push_back(i);
+	}
+
+	decltype(this->items) mergedItems;
+	map<int, int> oldStatesToMerged;
+	for (const auto& group : groups)
+	{
+		set<Item> merged;
+		for (int i : group.second)
+		{
+			merged.insert(this->items[i].begin(), this->items[i].end());
+			oldStatesToMerged[i] = mergedItems.size();
+		}
+		mergedItems.push_back(merged);
+	}
+
+	decltype(this->gotoTable) mergedGoto;
+	set<string> symbols = this->GetSymbols();
+
+	auto iterator = groups.begin();
+	for (auto i = 0; i < mergedItems.size(); i++)
+	{
+		vector<int>& group = (iterator++)->second;
+		for (const string& symbol : symbols)
+		{
+			for (int j : group)
+			{
+				auto key = make_pair(j, symbol);
+				if (this->gotoTable.find(key) != this->gotoTable.end())
+				{
+					auto newKey = make_pair(i, symbol);
+					auto transitionIndex = oldStatesToMerged[this->gotoTable[key]];
+					if (mergedGoto.find(newKey) != mergedGoto.end() && mergedGoto[newKey] != transitionIndex)
+						throw new std::invalid_argument("Grammar is not LR(1)!");
+
+					mergedGoto[newKey] = transitionIndex;
+				}
+			}
+		}
+	}
+
+	this->items = mergedItems;
+	this->gotoTable = mergedGoto;
 }

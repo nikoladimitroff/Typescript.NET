@@ -21,6 +21,7 @@ struct dllspec Item
 		const int ruleIndex, 
 		const int dotIndex);
 
+
 	dllspec friend bool operator<(const Item& first, const Item& second);
 	dllspec friend bool operator==(const Item& first, const Item& second);
 	dllspec friend bool operator!=(const Item& first, const Item& second);
@@ -33,7 +34,6 @@ dllspec const std::string AUGMENTED_START();
 class Grammar
 {
 private:
-
 
 	int ComputeFirstStep(std::string symbol);
 	void ComputeFirst();
@@ -56,11 +56,15 @@ public:
 	std::map<std::pair<int, std::string>, int> gotoTable;
 
 	dllspec Grammar(std::string start, std::map<std::string, RuleList> RuleList, bool shouldAugment);
+
+	std::set<std::string> GetSymbols();
+
 	dllspec std::set<std::string> ComputeFirstWord(const std::vector<std::string>& word);
 	dllspec friend std::ostream& operator<<(std::ostream& stream, const Grammar& grammar);
 	dllspec std::set<Item>& Closure(std::set<Item>& setOfItems);
 	dllspec std::set<Item> GoTo(const std::set<Item>& setOfItems, const std::string& terminal);
 	dllspec void ComputeItems();
+	void ComputeLR1Items();
 };
 
 dllspec void PrintClosure(const std::set<Item>& items, Grammar& g);

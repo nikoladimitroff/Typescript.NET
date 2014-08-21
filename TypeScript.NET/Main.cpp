@@ -8,6 +8,7 @@
 #include "LexicalAnalyzer.h"
 #include "Grammar.h"
 #include "Utilities.h"
+#include "Parser.h"
 
 using namespace std;
 
@@ -61,6 +62,8 @@ int main()
 	};
 
 	Grammar g("S", rules, true);
+	g.ComputeItems();
+	g.ComputeLR1Items();
 
 	/*Item i(AUGMENTED_START(), ENDMARKER(), 0, 0);
 	i.DotIndex = 0;
@@ -80,12 +83,44 @@ int main()
 	PrintClosure(g.GoTo(actual, "d"), g);
 */
 
-	g.ComputeItems();
+	/*set<string> symbols;
+	auto inserter = std::inserter(symbols, symbols.end());
+	copy(g.nonterminals.begin(), g.nonterminals.end(), inserter);
+	copy(g.terminals.begin(), g.terminals.end(), inserter);
+	
+
 	for (int i = 0; i < g.items.size(); i++)
 	{
-		cout << "I" << i << " -----------" << endl;
-		PrintClosure(g.items[i] , g);
+		cout << "I" << i << " ----------- " << endl;
+		PrintClosure(g.items[i], g);
+		cout << "Transitions: " << endl;
+		for (const string& symbol : symbols)
+		{
+			auto key = make_pair(i, symbol);
+			if (g.gotoTable.find(key) != g.gotoTable.end())
+				cout << symbol << " : " << g.gotoTable[key] << ", ";
+		}
+		cout << endl;
 	}
+*/
+	map<string, vector<vector<string>>> ifGrammar =
+	{
+		//{ "Statement", { { "s", "Statement" }, { EPSILON() } } }
+		{ "Statement", { { "if", "(", "Bool", ")", "Statement" }, { "{}" } } },
+		{ "Bool", { { "true" }, { "false" }, { "num", "NumOp", "num" } } },
+		{ "NumOp", { { "<" }, { ">" }, { "==" } } },
+	};
+
+	Grammar grammar("Statement", ifGrammar, true);
+	grammar.ComputeItems();
+	grammar.ComputeLR1Items();
+	Parser parser(grammar);
+
+	//cout << parser;
+
+	//parser.Parse(vector<string>({"c", "d", "c", "d"}));
+	parser.Parse(vector<string>({ "if", "(", "num", "==", "num", ")", "if", "(", "num", "<", "num", ")", "{}" }));
+	//parser.Parse(vector<string>({"s", "s"}));
 
 	cout << endl << "Press any key to continue" << endl;
 	cin.get();

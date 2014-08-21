@@ -1,5 +1,6 @@
 #pragma once
 #include <ostream>
+#include <set>
 #if defined(_WIN32)
 	#define export __declspec(dllexport)
 	#define import __declspec(dllimport)
@@ -28,4 +29,17 @@ std::ostream& JoinCollection(const T& collection, std::ostream& stream)
 		first = false;
 	}
 	return stream;
+}
+
+template <class Key, class Compare, class Alloc, class Func>
+void erase_if(std::set<Key, Compare, Alloc>& set, Func f)
+{
+	for (typename std::set<Key, Compare, Alloc>::iterator it = set.begin(); it != set.end();) {
+		if (f(*it)) {
+			it = set.erase(it);
+		}
+		else {
+			++it;
+		}
+	}
 }

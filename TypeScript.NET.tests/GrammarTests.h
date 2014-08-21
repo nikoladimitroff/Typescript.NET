@@ -85,5 +85,113 @@ TEST(GrammarUnfixturedTests, Closure)
 		Item("C", "d", 1, 0),
 	};
 
-	EXPECT_EQ(actual, expected);
+	EXPECT_EQ(expected, actual);
 }
+
+
+TEST(GrammarUnfixturedTests, Items)
+{
+	map<string, vector<vector<string>>> rules = {
+			{ "S", { { "C", "C" } } },
+			{ "C", { { "c", "C" }, { "d" } } },
+	};
+
+	Grammar g("S", rules, true);
+	g.ComputeItems();
+
+	set<set<Item>> expected =
+	{
+		{
+			Item(AUGMENTED_START(), ENDMARKER(), 0, 0),
+			Item("S", ENDMARKER(), 0, 0),
+			Item("C", "c", 0, 0),
+			Item("C", "d", 0, 0),
+			Item("C", "c", 1, 0),
+			Item("C", "d", 1, 0),
+		},
+		{
+			Item(AUGMENTED_START(), ENDMARKER(), 0, 1)
+		},
+		{
+			Item("S", ENDMARKER(), 0, 1),
+			Item("C", ENDMARKER(), 0, 0),
+			Item("C", ENDMARKER(), 1, 0),
+		},
+		{ 
+			Item("C", "c", 0, 0),
+			Item("C", "c", 0, 1),
+			Item("C", "c", 1, 0),
+			Item("C", "d", 0, 0),
+			Item("C", "d", 0, 1),
+			Item("C", "d", 1, 0),
+		},
+		{
+			Item("C", "c", 1, 1),
+			Item("C", "d", 1, 1),
+		},
+		{
+			Item("S", ENDMARKER(), 0, 2),
+		},
+		{
+			Item("C", ENDMARKER(), 0, 0),
+			Item("C", ENDMARKER(), 0, 1),
+			Item("C", ENDMARKER(), 1, 0),
+		},
+		{
+			Item("C", ENDMARKER(), 1, 1),
+		},
+		{
+			Item("C", "c", 0, 2),
+			Item("C", "d", 0, 2),
+		},
+		{
+			Item("C", ENDMARKER(), 0, 2),
+		},
+	};
+	set<set<Item>> actual;
+	for (const auto& itemSet : g.items)
+	{
+		actual.insert(itemSet);
+	}
+	EXPECT_EQ(expected, actual);
+}
+
+
+TEST(GrammarUnfixturedTests, GotoTable)
+{
+	map<string, vector<vector<string>>> rules = {
+			{ "S", { { "C", "C" } } },
+			{ "C", { { "c", "C" }, { "d" } } },
+	};
+
+	Grammar g("S", rules, true);
+	g.ComputeItems();
+
+	map<pair<int, string>, int> expected =
+	{
+		{ make_pair(0, "C"), 1 },
+		{ make_pair(0, "S"), 2 },
+		{ make_pair(0, "c"), 3 },
+		{ make_pair(0, "d"), 4 },
+
+		{ make_pair(1, "C"), 5 },
+		{ make_pair(1, "c"), 6 },
+		{ make_pair(1, "d"), 7 },
+
+		// empty for 2
+
+		{ make_pair(3, "C"), 8 },
+		{ make_pair(3, "c"), 3 },
+		{ make_pair(3, "d"), 4 },
+		
+		// empty for 4 and 5
+
+		{ make_pair(6, "C"), 9 },
+		{ make_pair(6, "c"), 6 },
+		{ make_pair(6, "d"), 7 },
+		// the rest are empty
+	};
+
+	EXPECT_EQ(expected, g.gotoTable);
+}
+
