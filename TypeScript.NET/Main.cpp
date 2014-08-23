@@ -119,7 +119,8 @@ int main()
 	//cout << parser;
 
 	//parser.Parse(vector<string>({"c", "d", "c", "d"}));
-	parser.Parse(vector<string>({ "if", "(", "num", "==", "num", ")", "if", "(", "num", "<", "num", ")", "{}" }));
+	auto tree = parser.Parse(vector<string>({ "if", "(", "num", "==", "num", ")", "if", "(", "num", "<", "num", ")", "{}" }));
+	cout << *tree;
 	//parser.Parse(vector<string>({"s", "s"}));
 
 	cout << endl << "Press any key to continue" << endl;

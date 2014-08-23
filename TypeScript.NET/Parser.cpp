@@ -3,6 +3,26 @@
 
 using namespace std;
 
+void SyntaxTree::ReverseChildren()
+{
+	reverse(this->Children.begin(), this->Children.end());
+	for (auto& node : this->Children)
+		node->ReverseChildren();
+}
+
+void SyntaxTree::PrintTree(ostream& o, int indentation) const
+{
+	o << string(indentation * 4, ' ') << this->Node << endl;
+	for (auto& node : this->Children)
+		node->PrintTree(o, indentation + 1);
+}
+
+ostream& operator<<(ostream& o, const SyntaxTree& tree)
+{
+	tree.PrintTree(o, 0);
+	return o;
+}
+
 
 void Parser::ComputeActionTable()
 {
@@ -15,7 +35,7 @@ void Parser::ComputeActionTable()
 		{
 			auto key = make_pair(i, symbol);
 			ParsingAction action = this->ComputeAction(i, symbol);
-			//if (action.Type != ParsingActionType::Error)
+			if (action.Type != ParsingActionType::Error)
 				this->actionTable[key] = action;
 		}
 	}
@@ -64,47 +84,50 @@ ParsingAction Parser::ComputeAction(int i, const string& symbol)
 	return action;
 }
 
-void Parser::Parse(vector<string>& text) const
+shared_ptr<SyntaxTree> Parser::Parse(vector<string>& text) const
 {
 	text.push_back(ENDMARKER());
-	stack<int> states;
-	states.push(this->startState);
+	stack<pair<int, shared_ptr<SyntaxTree>>> states;
+	states.push(make_pair(this->startState, make_shared<SyntaxTree>()));
+	shared_ptr<SyntaxTree> parseTree;
 
 	int tokenIndex = 0;
 	while (true)
 	{
 		const string& token = text[tokenIndex];
-		auto key = make_pair(states.top(), token);
-
+		auto key = make_pair(states.top().first, token);
+		
 		ParsingAction action = this->actionTable.at(key);
 
 		if (action.Type == ParsingActionType::Shift)
 		{
-			states.push(action.StateIndex);
+			states.push(make_pair(action.StateIndex, make_shared<SyntaxTree>(token)));
 			++tokenIndex;
 		}
 		else if (action.Type == ParsingActionType::Reduce)
 		{
 			vector<string> ruleBody = this->grammar.rules.at(action.ProductionHead)[action.RuleIndex];
+			auto treeNode = make_shared<SyntaxTree>();
+			treeNode->Node = action.ProductionHead;
 			for (int i = 0; i < ruleBody.size(); i++)
+			{
+				auto subtree = states.top().second;
+				treeNode->Children.push_back(subtree);
 				states.pop();
+			}
 
-			auto gotoKey = make_pair(states.top(), action.ProductionHead);
-			states.push(this->grammar.gotoTable.at(gotoKey));
-			cout << "REDUCED: " << action.ProductionHead << " -> ";
-			JoinCollection(ruleBody, cout);
-			cout << endl;
+			auto gotoKey = make_pair(states.top().first, action.ProductionHead);
+			states.push(make_pair(this->grammar.gotoTable.at(gotoKey), treeNode));
 		}
 		else if (action.Type == ParsingActionType::Accept)
 		{
+			parseTree = states.top().second;
 			break;
-		}
-		else
-		{
-			throw invalid_argument("Invalid syntax!");
 		}
 	}
 	text.pop_back();
+	parseTree->ReverseChildren();
+	return parseTree;
 }
 
 

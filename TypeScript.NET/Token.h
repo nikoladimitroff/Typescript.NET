@@ -53,35 +53,35 @@ enum class dllspec TokenTag
 namespace
 {
 	const std::string tagLabels[] = {
-		"KeywordVar",
-		"KeywordIf",
-		"KeywordElseIf",
-		"KeywordElse",
-		"KeywordFor",
-		"KeywordWhile",
-		"KeywordContinue",
-		"KeywordSwitch",
-		"KeywordCase",
-		"KeywordDefault",
-		"KeywordBreak",
-		"KeywordReturn",
-		"KeywordModule",
-		"KeywordClass",
-		"KeywordInterface",
-		
-		"Id",
-		
-		"LeftParenthesis",
-		"RightParenthesis",
-		"LeftSquareBracket",
-		"RightSquareBracket",
-		"LeftBrace",
-		"RightBrace",
-		
-		"Dot",
-		"Comma",
-		"Colon",
-		"Semicolon",
+		"var",
+		"if",
+		"else if",
+		"else",
+		"for",
+		"while",
+		"continue",
+		"switch",
+		"case",
+		"default",
+		"break",
+		"return",
+		"module",
+		"class",
+		"interface",
+
+		"id",
+
+		"(",
+		")",
+		"[",
+		"]",
+		"{",
+		"}",
+
+		".",
+		",",
+		":",
+		";",
 		
 		"UnaryOp",
 		"BinaryOp",
@@ -90,7 +90,7 @@ namespace
 		"Comment",
 		"Number",
 		"StringLiteral",
-		"Assignment",
+		"=",
 		"RelativeOp",
 		"BoolOp",
 		"EndOfFile"
@@ -107,6 +107,9 @@ public:
 	Token() : lexeme(""), tag(TokenTag::EndOfFile)
 	{}
 
+	Token(const std::string lexeme) : lexeme(lexeme), tag(TokenTag::EndOfFile)
+	{}
+
 	Token(const std::string lexeme, TokenTag tag) : lexeme(lexeme), tag(tag)
 	{}
 	const std::string& GetLexeme() const
@@ -117,6 +120,11 @@ public:
 	const TokenTag GetTag() const
 	{
 		return this->tag;
+	}
+
+	const std::string& GetTerminal() const
+	{
+		return tagLabels[static_cast<int>(this->tag)];
 	}
 };
 

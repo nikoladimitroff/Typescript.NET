@@ -16,14 +16,14 @@
 #endif
 
 template<typename T>
-std::ostream& JoinCollection(const T& collection, std::ostream& stream)
+std::ostream& JoinCollection(const T& collection, std::ostream& stream, const std::string& separator = ", ")
 {
 	bool first = true;
 	for (auto s : collection)
 	{
 		if (!first)
 		{
-			stream << ", ";
+			stream << separator;
 		}
 		stream << s;
 		first = false;

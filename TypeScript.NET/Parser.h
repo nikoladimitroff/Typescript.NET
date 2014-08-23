@@ -1,6 +1,7 @@
 #pragma once
 #include "Grammar.h"
 #include <map>
+#include <memory>
 
 enum class ParsingActionType
 {
@@ -23,6 +24,26 @@ struct ParsingAction
 	friend std::ostream& operator<<(std::ostream& o, const ParsingAction& parser);
 };
 
+class SyntaxTree
+{
+private:
+	void PrintTree(std::ostream& o, int indentation) const;
+
+public:
+	std::vector<std::shared_ptr<SyntaxTree>> Children;
+	std::string Node;
+
+	SyntaxTree() : Node("")
+	{ }
+
+	SyntaxTree(const std::string token) : Node(token)
+	{ }
+
+	void ReverseChildren();
+
+	friend std::ostream& operator<<(std::ostream& o, const SyntaxTree& tree);
+};
+
 class Parser
 {
 private:
@@ -41,7 +62,7 @@ public:
 		this->ComputeActionTable();
 	}
 
-	void Parse(std::vector<std::string>& text) const;
+	std::shared_ptr<SyntaxTree> Parse(std::vector<std::string>& text) const;
 	friend std::ostream& operator<<(std::ostream& o, const Parser& parser);
 };
 

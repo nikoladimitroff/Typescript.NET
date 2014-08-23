@@ -65,7 +65,6 @@ vector<pair<regex, TokenTag>> GeneratePatternMap()
 	return patternMap;
 }
 
-#include <iostream>
 LexicalAnalyzer::LexicalAnalyzer() : patternToTag(GeneratePatternMap())
 { }
 
