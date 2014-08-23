@@ -7,6 +7,8 @@
 
 enum class dllspec TokenTag
 {
+	Nonterminal,
+
 	KeywordVar,
 	KeywordIf,
 	KeywordElseIf,
@@ -43,16 +45,19 @@ enum class dllspec TokenTag
 	Whitespace,
 	Comment,
 	Number,
+	BoolLiteral,
 	StringLiteral,
 	Assignment,
 	RelativeOp,
 	BoolOp,
-	EndOfFile
+	AugmentedStart,
+	Endmarker
 };
 
 namespace
 {
 	const std::string tagLabels[] = {
+		"Nonterminal",
 		"var",
 		"if",
 		"else if",
@@ -83,17 +88,19 @@ namespace
 		":",
 		";",
 		
-		"UnaryOp",
-		"BinaryOp",
+		"UNARY_OP",
+		"BINARY_OP",
 		
-		"Whitespace",
-		"Comment",
-		"Number",
-		"StringLiteral",
+		"WHITESPACE",
+		"COMMENT",
+		"NUMBER",
+		"BOOL_LITERAL",
+		"STRING",
 		"=",
-		"RelativeOp",
-		"BoolOp",
-		"EndOfFile"
+		"RELATIVE_OP",
+		"BOOL_OP",
+		"AUGMENTED_START",
+		"ENDMARKER",
 	};
 }
 
@@ -104,10 +111,10 @@ private:
 	TokenTag tag;
 
 public:
-	Token() : lexeme(""), tag(TokenTag::EndOfFile)
+	Token() : lexeme(""), tag(TokenTag::Nonterminal)
 	{}
 
-	Token(const std::string lexeme) : lexeme(lexeme), tag(TokenTag::EndOfFile)
+	Token(const std::string lexeme) : lexeme(lexeme), tag(TokenTag::Nonterminal)
 	{}
 
 	Token(const std::string lexeme, TokenTag tag) : lexeme(lexeme), tag(tag)
@@ -131,7 +138,7 @@ public:
 
 dllspec inline std::ostream&  operator<<(std::ostream& o, const Token& token)
 {
-	o << token.GetLexeme();
+	o << token.GetTerminal();
 	//o << tagLabels[static_cast<int>(token.GetTag())];
 	//o << "<" << tagLabels[static_cast<int>(token.GetTag())] << ", " << token.GetLexeme() << ">";
 	return o;

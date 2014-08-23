@@ -12,7 +12,9 @@ void SyntaxTree::ReverseChildren()
 
 void SyntaxTree::PrintTree(ostream& o, int indentation) const
 {
-	o << string(indentation * 4, ' ') << this->Node << endl;
+	for (int i = 0; i < indentation; i++)
+		o << '|' << string(3, ' ');
+	o << this->Node.GetLexeme() << endl;
 	for (auto& node : this->Children)
 		node->PrintTree(o, indentation + 1);
 }
@@ -63,10 +65,13 @@ ParsingAction Parser::ComputeAction(int i, const string& symbol)
 					action.Type = ParsingActionType::Accept;
 					continue;
 				}
-				if (action.Type != ParsingActionType::Error) throw std::invalid_argument("Grammar is not LALR(1)");
-				action.Type = ParsingActionType::Reduce;
-				action.ProductionHead = item.ProductionHead;
-				action.RuleIndex = item.RuleIndex;
+				// Prefer shift to reduce
+				if (action.Type != ParsingActionType::Shift)
+				{
+					action.Type = ParsingActionType::Reduce;
+					action.ProductionHead = item.ProductionHead;
+					action.RuleIndex = item.RuleIndex;
+				}
 			}
 			continue;
 		}
@@ -84,9 +89,8 @@ ParsingAction Parser::ComputeAction(int i, const string& symbol)
 	return action;
 }
 
-shared_ptr<SyntaxTree> Parser::Parse(vector<string>& text) const
+shared_ptr<SyntaxTree> Parser::Parse(vector<Token>& text) const
 {
-	text.push_back(ENDMARKER());
 	stack<pair<int, shared_ptr<SyntaxTree>>> states;
 	states.push(make_pair(this->startState, make_shared<SyntaxTree>()));
 	shared_ptr<SyntaxTree> parseTree;
@@ -94,9 +98,9 @@ shared_ptr<SyntaxTree> Parser::Parse(vector<string>& text) const
 	int tokenIndex = 0;
 	while (true)
 	{
-		const string& token = text[tokenIndex];
-		auto key = make_pair(states.top().first, token);
-		
+		const Token& token = text[tokenIndex];
+		auto key = make_pair(states.top().first, token.GetTerminal());
+
 		ParsingAction action = this->actionTable.at(key);
 
 		if (action.Type == ParsingActionType::Shift)
@@ -125,7 +129,6 @@ shared_ptr<SyntaxTree> Parser::Parse(vector<string>& text) const
 			break;
 		}
 	}
-	text.pop_back();
 	parseTree->ReverseChildren();
 	return parseTree;
 }

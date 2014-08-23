@@ -1,4 +1,5 @@
 #pragma once
+#include "Token.h"
 #include "Grammar.h"
 #include <map>
 #include <memory>
@@ -31,12 +32,12 @@ private:
 
 public:
 	std::vector<std::shared_ptr<SyntaxTree>> Children;
-	std::string Node;
+	Token Node;
 
 	SyntaxTree() : Node("")
 	{ }
 
-	SyntaxTree(const std::string token) : Node(token)
+	SyntaxTree(const Token token) : Node(token)
 	{ }
 
 	void ReverseChildren();
@@ -62,7 +63,7 @@ public:
 		this->ComputeActionTable();
 	}
 
-	std::shared_ptr<SyntaxTree> Parse(std::vector<std::string>& text) const;
+	std::shared_ptr<SyntaxTree> Parse(std::vector<Token>& text) const;
 	friend std::ostream& operator<<(std::ostream& o, const Parser& parser);
 };
 

@@ -106,9 +106,16 @@ int main()
 	map<string, vector<vector<string>>> ifGrammar =
 	{
 		//{ "Statement", { { "s", "Statement" }, { EPSILON() } } }
-		{ "Statement", { { "if", "(", "Bool", ")", "Statement" }, { "{}" } } },
-		{ "Bool", { { "true" }, { "false" }, { "num", "NumOp", "num" } } },
-		{ "NumOp", { { "<" }, { ">" }, { "==" } } },
+		{
+			"Statement",
+			{
+				{ "if", "(", "Bool", ")", "Statement" },
+				{ "if", "(", "Bool", ")", "Statement", "else", "Statement" },
+				{ "while", "(", "Bool", ")", "Statement" },
+				{ "{", "}" }
+			}
+		},
+		{ "Bool", { { "BOOL_LITERAL" }, { "NUMBER", "RELATIVE_OP", "NUMBER" }, { "Bool", "BOOL_OP", "Bool" } } },
 	};
 
 	Grammar grammar("Statement", ifGrammar, true);
@@ -118,8 +125,12 @@ int main()
 
 	//cout << parser;
 
+	LexicalAnalyzer lexer;
+
+	string code = "if (2 == 2) while (5 < 4 && 8 > 9 || false) { } else {}";
+
 	//parser.Parse(vector<string>({"c", "d", "c", "d"}));
-	auto tree = parser.Parse(vector<string>({ "if", "(", "num", "==", "num", ")", "if", "(", "num", "<", "num", ")", "{}" }));
+	auto tree = parser.Parse(lexer.Tokenize(code, true));
 	cout << *tree;
 	//parser.Parse(vector<string>({"s", "s"}));
 

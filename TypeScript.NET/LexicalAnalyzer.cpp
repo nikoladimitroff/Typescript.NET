@@ -7,6 +7,7 @@ vector<pair<regex, TokenTag>> GeneratePatternMap()
 	string ws = R"(( |\n)+)",
 		comment = R"(//.*?\n|/\*.*?\*/)",
 		number = R"((-)?\d+(\.\d+)?)",
+		boolLiteral = R"((true)|(false))",
 		stringLiteral = R"(("|').*?\1)",
 		relOp = R"(==|!=|<=|>=|>|<)",
 		boolOp = R"(&&|\|\||!)",
@@ -55,12 +56,15 @@ vector<pair<regex, TokenTag>> GeneratePatternMap()
 		make_pair(regex(boolOp), TokenTag::BoolOp),
 
 		// Other constructs
-		make_pair(regex(id), TokenTag::Id),
 		make_pair(regex(number), TokenTag::Number),
+		make_pair(regex(boolLiteral), TokenTag::BoolLiteral),
 		make_pair(regex(stringLiteral), TokenTag::StringLiteral),
 		make_pair(regex(assignment), TokenTag::Assignment),
 		make_pair(regex(comment), TokenTag::Comment),
 		make_pair(regex(ws), TokenTag::Whitespace),
+
+
+		make_pair(regex(id), TokenTag::Id),
 	};
 	return patternMap;
 }
@@ -103,7 +107,7 @@ vector<Token> LexicalAnalyzer::Tokenize(const string& text, bool skipWhitespaceC
 		if (!skipWhitespaceComments || (t.GetTag() != TokenTag::Whitespace && t.GetTag() != TokenTag::Comment))
 			tokens.push_back(t);
 		offset += t.GetLexeme().length();
-	} while (t.GetTag() != TokenTag::EndOfFile);
-
+	} while (offset != text.size());
+	tokens.push_back(Token("", TokenTag::Endmarker));
 	return tokens;
 }
