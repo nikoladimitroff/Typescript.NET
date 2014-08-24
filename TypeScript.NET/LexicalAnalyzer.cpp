@@ -4,7 +4,7 @@ using namespace std;
 
 vector<pair<regex, TokenTag>> GeneratePatternMap()
 {
-	string ws = R"(( |\n)+)",
+	string ws = R"(\s+)",
 		comment = R"(//.*?\n|/\*.*?\*/)",
 		number = R"((-)?\d+(\.\d+)?)",
 		boolLiteral = R"((true)|(false))",
@@ -34,6 +34,8 @@ vector<pair<regex, TokenTag>> GeneratePatternMap()
 		make_pair(regex("module"), TokenTag::KeywordModule),
 		make_pair(regex("class"), TokenTag::KeywordClass),
 		make_pair(regex("interface"), TokenTag::KeywordInterface),
+		make_pair(regex("private"), TokenTag::KeywordPrivate),
+		make_pair(regex("public"), TokenTag::KeywordPublic),
 
 		// Brackets
 		make_pair(regex("\\("), TokenTag::LeftParenthesis),

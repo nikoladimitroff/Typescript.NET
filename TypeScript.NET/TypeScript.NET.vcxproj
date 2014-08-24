@@ -68,6 +68,7 @@
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Grammar.cpp" />
     <ClCompile Include="Parser.cpp" />
+    <ClCompile Include="TsToCSharp.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Sample.ts" />
@@ -78,6 +79,7 @@
     <ClInclude Include="Parser.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Token.h" />
+    <ClInclude Include="TsToCSharp.h" />
     <ClInclude Include="Utilities.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

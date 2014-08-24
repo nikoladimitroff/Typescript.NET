@@ -99,9 +99,9 @@ shared_ptr<SyntaxTree> Parser::Parse(vector<Token>& text) const
 	while (true)
 	{
 		const Token& token = text[tokenIndex];
-		auto key = make_pair(states.top().first, token.GetTerminal());
+		auto key = make_pair(states.top().first, token.GetSymbol());
 
-		ParsingAction action = this->actionTable.at(key);
+		const ParsingAction& action = this->actionTable.at(key);
 
 		if (action.Type == ParsingActionType::Shift)
 		{

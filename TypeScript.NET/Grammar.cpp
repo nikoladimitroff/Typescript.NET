@@ -97,6 +97,7 @@ Grammar::Grammar(string start, map<string, RuleList> rules, bool shouldAugment)
 
 	this->ComputeFirst();
 	this->ComputeFollow();
+	this->ComputeLR1Items();
 }
 
 
@@ -419,6 +420,7 @@ int ComputeItemSetCoreHash(const set<Item>& items)
 
 void Grammar::ComputeLR1Items()
 {
+	this->ComputeItems();
 	map<unsigned long, vector<int>> groups;
 	// Start from the 2nd item since we want to preserve the I0 at index 0 in the merged set
 	for (auto i = 0; i < this->items.size(); i++)

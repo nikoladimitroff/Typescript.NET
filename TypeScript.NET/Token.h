@@ -23,7 +23,9 @@ enum class dllspec TokenTag
 	KeywordReturn,
 	KeywordModule,
 	KeywordClass,
-	KeywordInterface,
+	KeywordInterface, 
+	KeywordPrivate,
+	KeywordPublic,
 
 	Id,
 
@@ -73,6 +75,8 @@ namespace
 		"module",
 		"class",
 		"interface",
+		"private",
+		"public",
 
 		"id",
 
@@ -129,7 +133,7 @@ public:
 		return this->tag;
 	}
 
-	const std::string& GetTerminal() const
+	const std::string& GetSymbol() const
 	{
 		return tagLabels[static_cast<int>(this->tag)];
 	}
@@ -138,7 +142,7 @@ public:
 
 dllspec inline std::ostream&  operator<<(std::ostream& o, const Token& token)
 {
-	o << token.GetTerminal();
+	o << token.GetSymbol();
 	//o << tagLabels[static_cast<int>(token.GetTag())];
 	//o << "<" << tagLabels[static_cast<int>(token.GetTag())] << ", " << token.GetLexeme() << ">";
 	return o;

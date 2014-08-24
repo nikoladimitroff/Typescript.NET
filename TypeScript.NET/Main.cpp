@@ -9,6 +9,7 @@
 #include "Grammar.h"
 #include "Utilities.h"
 #include "Parser.h"
+#include "TsToCSharp.h"
 
 using namespace std;
 
@@ -118,21 +119,29 @@ int main()
 		{ "Bool", { { "BOOL_LITERAL" }, { "NUMBER", "RELATIVE_OP", "NUMBER" }, { "Bool", "BOOL_OP", "Bool" } } },
 	};
 
-	Grammar grammar("Statement", ifGrammar, true);
-	grammar.ComputeItems();
-	grammar.ComputeLR1Items();
-	Parser parser(grammar);
+	//Grammar grammar("Statement", ifGrammar, true);
+	//Parser parser(grammar);
 
 	//cout << parser;
 
-	LexicalAnalyzer lexer;
+	//LexicalAnalyzer lexer;
 
-	string code = "if (2 == 2) while (5 < 4 && 8 > 9 || false) { } else {}";
+	string code = R"( 
+		class Game {
+			private x: number;
+			public f(): any {
+				var y: boolean = false;
+			}
+		}
+	)";
 
 	//parser.Parse(vector<string>({"c", "d", "c", "d"}));
-	auto tree = parser.Parse(lexer.Tokenize(code, true));
-	cout << *tree;
+	//auto tree = parser.Parse(lexer.Tokenize(code, true));
+	//cout << *tree;
 	//parser.Parse(vector<string>({"s", "s"}));
+
+	Translators::TsToCSharp translator;
+	cout << translator.Translate(code);
 
 	cout << endl << "Press any key to continue" << endl;
 	cin.get();
