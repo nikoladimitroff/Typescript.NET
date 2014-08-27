@@ -26,6 +26,8 @@ enum class dllspec TokenTag
 	KeywordInterface, 
 	KeywordPrivate,
 	KeywordPublic,
+	KeywordExtends,
+	KeywordImplements,
 
 	Id,
 
@@ -43,6 +45,7 @@ enum class dllspec TokenTag
 
 	UnaryOp,
 	BinaryOp,
+	BinaryAssignment,
 
 	Whitespace,
 	Comment,
@@ -50,8 +53,6 @@ enum class dllspec TokenTag
 	BoolLiteral,
 	StringLiteral,
 	Assignment,
-	RelativeOp,
-	BoolOp,
 	AugmentedStart,
 	Endmarker
 };
@@ -77,6 +78,8 @@ namespace
 		"interface",
 		"private",
 		"public",
+		"extends",
+		"implements",
 
 		"id",
 
@@ -94,15 +97,14 @@ namespace
 		
 		"UNARY_OP",
 		"BINARY_OP",
+		"BINARY_ASSIGNMENT",
 		
 		"WHITESPACE",
 		"COMMENT",
 		"NUMBER",
 		"BOOL_LITERAL",
-		"STRING",
+		"STRING_LITERAL",
 		"=",
-		"RELATIVE_OP",
-		"BOOL_OP",
 		"AUGMENTED_START",
 		"ENDMARKER",
 	};

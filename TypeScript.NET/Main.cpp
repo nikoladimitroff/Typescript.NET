@@ -13,97 +13,8 @@
 
 using namespace std;
 
-vector<string> all_matches(const string& text, const regex& pattern)
-{
-	sregex_iterator it(text.begin(), text.end(), pattern),
-		end;
-
-	if (it == end)
-		return{ "EOF" };
-
-
-	vector<string> matches;
-	for (; it != end; it++)
-	{
-		matches.push_back(it->str());
-	}
-	return matches;
-}
-
-vector<string> all_matches(const string& text, const string& pattern)
-{
-	return all_matches(text, regex(pattern));
-}
-
-
-
-string read_file_to_end(const string& path)
-{
-	fstream file(path);
-	file.seekg(0, std::ios::end);
-	int size = file.tellg();
-	file.seekg(0);
-	string text;
-	text.reserve(size);
-
-	text.assign((std::istreambuf_iterator<char>(file)),
-				std::istreambuf_iterator<char>());
-
-	return text;
-}
-
-
 int main()
 {
-
-
-	map<string, vector<vector<string>>> rules = {
-			{ "S", { { "C", "C" } } },
-			{ "C", { { "c", "C" }, { "d" } } },
-	};
-
-	Grammar g("S", rules, true);
-	g.ComputeItems();
-	g.ComputeLR1Items();
-
-	/*Item i(AUGMENTED_START(), ENDMARKER(), 0, 0);
-	i.DotIndex = 0;
-	i.Lookahead = ENDMARKER();
-	i.ProductionHead = AUGMENTED_START();
-	i.RuleIndex = 0;
-	set<Item> actual = { i };
-	g.Closure(actual);
-
-	cout << "S:" << endl;
-	PrintClosure(g.GoTo(actual, "S"), g);
-	cout << "C:" << endl;
-	PrintClosure(g.GoTo(actual, "C"), g);
-	cout << "c:" << endl;
-	PrintClosure(g.GoTo(actual, "c"), g);
-	cout << "d:" << endl;
-	PrintClosure(g.GoTo(actual, "d"), g);
-*/
-
-	/*set<string> symbols;
-	auto inserter = std::inserter(symbols, symbols.end());
-	copy(g.nonterminals.begin(), g.nonterminals.end(), inserter);
-	copy(g.terminals.begin(), g.terminals.end(), inserter);
-	
-
-	for (int i = 0; i < g.items.size(); i++)
-	{
-		cout << "I" << i << " ----------- " << endl;
-		PrintClosure(g.items[i], g);
-		cout << "Transitions: " << endl;
-		for (const string& symbol : symbols)
-		{
-			auto key = make_pair(i, symbol);
-			if (g.gotoTable.find(key) != g.gotoTable.end())
-				cout << symbol << " : " << g.gotoTable[key] << ", ";
-		}
-		cout << endl;
-	}
-*/
 	map<string, vector<vector<string>>> ifGrammar =
 	{
 		//{ "Statement", { { "s", "Statement" }, { EPSILON() } } }
@@ -119,30 +30,42 @@ int main()
 		{ "Bool", { { "BOOL_LITERAL" }, { "NUMBER", "RELATIVE_OP", "NUMBER" }, { "Bool", "BOOL_OP", "Bool" } } },
 	};
 
-	//Grammar grammar("Statement", ifGrammar, true);
-	//Parser parser(grammar);
-
-	//cout << parser;
-
-	//LexicalAnalyzer lexer;
 
 	string code = R"( 
-		class Game {
+		class A extends B implements I1, I2 {
 			private x: number;
-			public f(): any {
-				var y: boolean = false;
+			
+			public myMethod(x: number, y: string): void {
+				for (var i: number; i ; i++) {
+					y += y;
+				}
 			}
 		}
 	)";
 
-	//parser.Parse(vector<string>({"c", "d", "c", "d"}));
-	//auto tree = parser.Parse(lexer.Tokenize(code, true));
-	//cout << *tree;
-	//parser.Parse(vector<string>({"s", "s"}));
+	code = R"( 
+		class A extends B implements I1, I2, I3 {
+			private x: number;
+			public computeMe(x: number, txt: string, flag: boolean): number {
+				var y: number = 5;
+				for (var i: number = 0; i < y; i++) {
+					var x: string = "texty";
+					txt = x[y + i];
+				}
+			}
+		}
+	)";
 
-	Translators::TsToCSharp translator;
-	cout << translator.Translate(code);
+	Translators::TsToCSharp translator(true);
 
+	try
+	{
+		cout << translator.Translate(code);
+	}
+	catch (invalid_argument& e)
+	{
+		cout << e.what();
+	}
 	cout << endl << "Press any key to continue" << endl;
 	cin.get();
 

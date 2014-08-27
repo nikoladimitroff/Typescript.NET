@@ -342,7 +342,7 @@ set<Item> Grammar::GoTo(const std::set<Item>& setOfItems, const std::string& sym
 	return this->Closure(gotoset);
 }
 
-set<string> Grammar::GetSymbols()
+set<string> Grammar::GetSymbols() const
 {
 	set<string> symbols;
 	auto inserter = std::inserter(symbols, symbols.end());
@@ -469,4 +469,77 @@ void Grammar::ComputeLR1Items()
 
 	this->items = mergedItems;
 	this->gotoTable = mergedGoto;
+}
+
+
+void Grammar::Save(ostream& output) const
+{
+	output << this->startSymbol << endl;
+	for (auto& entry : this->rules)
+	{
+		const string& head = entry.first;
+		output << head << ' ' <<  entry.second.size() << endl;
+		for (const RuleBody& rule : entry.second)
+		{
+			for (const string& symbol : rule)
+			{
+				output << symbol << ' ';
+			}
+			output << "ENDBODY" << endl;
+		}
+	}
+	output << "ENDRULES" << endl;
+
+	for (auto& entry : this->gotoTable)
+	{
+		output << entry.first.first << " " << entry.first.second << " " << entry.second << endl;
+	}
+
+	output << "-1" << endl;
+}
+
+void Grammar::Load(istream& input)
+{
+	this->rules.clear();
+	this->gotoTable.clear();
+	this->items.clear();
+	input >> this->startSymbol;
+	while (true)
+	{
+		string head;
+		input >> head;
+		if (head == "ENDRULES")
+			break;
+		int ruleCount;
+		input >> ruleCount;
+
+		for (int i = 0; i < ruleCount; i++)
+		{
+			vector<string> body;
+			while (true)
+			{
+				string symbol;
+				input >> symbol;
+				if (symbol == "ENDBODY")
+				{
+					this->rules[head].push_back(body);
+					break;
+				}
+				body.push_back(symbol);
+			}
+		}
+	}
+
+	while (true)
+	{
+		int state;
+		input >> state;
+		if (state < 0) break;
+		string symbol;
+		input >> symbol;
+		int nextState;
+		input >> nextState;
+		this->gotoTable[make_pair(state, symbol)] = nextState;
+	}
+
 }

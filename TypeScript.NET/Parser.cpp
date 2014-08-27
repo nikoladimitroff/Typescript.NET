@@ -1,5 +1,6 @@
 #include "Parser.h"
 #include <stack>
+#include <sstream>
 
 using namespace std;
 
@@ -101,6 +102,23 @@ shared_ptr<SyntaxTree> Parser::Parse(vector<Token>& text) const
 		const Token& token = text[tokenIndex];
 		auto key = make_pair(states.top().first, token.GetSymbol());
 
+		if (this->actionTable.find(key) == this->actionTable.end())
+		{
+			vector<string> expected;
+			for (const auto& symbol : this->grammar.GetSymbols())
+			{
+				auto pair = make_pair(states.top().first, symbol);
+				if (this->actionTable.find(pair) != this->actionTable.end())
+					expected.push_back(symbol);
+			}
+			stringstream error;
+			error << "Syntax Error at Token: " << token << ", Index: " << tokenIndex << endl << "Expected one of: ";
+			JoinCollection(expected, error, " ");
+			error << endl << "Got: " << token.GetSymbol() << endl;
+			error << "Current parse tree:" << endl << *states.top().second << endl;
+			throw invalid_argument(error.str());
+		}
+
 		const ParsingAction& action = this->actionTable.at(key);
 
 		if (action.Type == ParsingActionType::Shift)
@@ -139,10 +157,10 @@ ostream& operator<<(ostream& o, const ParsingAction& action)
 	switch (action.Type)
 	{
 	case ParsingActionType::Shift:
-		o << "s" << action.StateIndex;
+		o << "s" << ' ' << action.StateIndex;
 		break;
 	case ParsingActionType::Reduce:
-			o << "r" << action.ProductionHead << ", " << action.RuleIndex;
+			o << "r" << ' ' << action.ProductionHead << ' ' << action.RuleIndex;
 			break;
 	case ParsingActionType::Accept:
 			o << "Accept";
@@ -154,6 +172,29 @@ ostream& operator<<(ostream& o, const ParsingAction& action)
 	return o;
 }
 
+istream& operator>>(istream& input, ParsingAction& action)
+{
+	string type;
+	input >> type;
+	if (type == "s")
+	{
+		action.Type = ParsingActionType::Shift;
+		input >> action.StateIndex;
+	}
+	else if (type == "r")
+	{
+		action.Type = ParsingActionType::Reduce;
+		input >> action.ProductionHead;
+		input >> action.RuleIndex;
+	}
+	else
+	{
+		action.Type = ParsingActionType::Accept;
+	}
+
+	return input;
+}
+
 ostream& operator<<(ostream& o, const Parser& parser)
 {
 	for (auto& pair : parser.actionTable)
@@ -162,4 +203,35 @@ ostream& operator<<(ostream& o, const Parser& parser)
 	}
 
 	return o;
+}
+
+void Parser::Save(ostream& output) const
+{
+	output << this->startState << endl;
+	for (auto& entry : this->actionTable)
+	{
+		output << entry.first.first << " " << entry.first.second << " " << entry.second << endl;
+	}
+
+	output << "-1" << endl;
+	this->grammar.Save(output);
+}
+
+void Parser::Load(istream& input)
+{
+	this->actionTable.clear();
+	input >> this->startState;
+	while (true)
+	{
+		int state;
+		input >> state;
+		if (state < 0) break;
+		string symbol;
+		input >> symbol;
+		ParsingAction action;
+		input >> action;
+		this->actionTable[make_pair(state, symbol)] = action;
+	}
+
+	this->grammar.Load(input);
 }

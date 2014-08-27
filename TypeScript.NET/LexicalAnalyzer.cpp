@@ -4,58 +4,60 @@ using namespace std;
 
 vector<pair<regex, TokenTag>> GeneratePatternMap()
 {
-	string ws = R"(\s+)",
-		comment = R"(//.*?\n|/\*.*?\*/)",
-		number = R"((-)?\d+(\.\d+)?)",
-		boolLiteral = R"((true)|(false))",
-		stringLiteral = R"(("|').*?\1)",
-		relOp = R"(==|!=|<=|>=|>|<)",
-		boolOp = R"(&&|\|\||!)",
-		unaryOp = R"(\+\+|--)",
-		binaryOp = R"(\+|\-|\*|/)",
-		assignment = R"(=)",
-		id = R"([A-Za-z]\w*)";
+	string ws = R"(^\s+)",
+		comment = R"(^(//.*?\n|/\*.*?\*/))",
+		number = R"(^((-)?\d+(\.\d+)?))",
+		boolLiteral = R"(^(true|false))",
+		stringLiteral = R"(^("|').*?\1)",
+		unaryOp = R"(^(\+\+|--))",
+		binaryOp = R"(^(\+|\-|\*|/|%|&&|\|\||!|==|!=|<=|>=|>|<))",
+		binaryAssignment = R"(^(\+=|\-=|\*=|/=|&=|\|=|<<=|>>=))",
+		assignment = R"(^=)",
+		id = R"(^[A-Za-z]\w*)";
 
 	auto patternMap =
 	{
 		// Keywords
-		make_pair(regex("var"), TokenTag::KeywordVar),
-		make_pair(regex("if"), TokenTag::KeywordIf),
-		make_pair(regex("else if"), TokenTag::KeywordElseIf),
-		make_pair(regex("else"), TokenTag::KeywordElse),
-		make_pair(regex("for"), TokenTag::KeywordFor),
-		make_pair(regex("while"), TokenTag::KeywordWhile),
-		make_pair(regex("continue"), TokenTag::KeywordContinue),
-		make_pair(regex("switch"), TokenTag::KeywordSwitch),
-		make_pair(regex("case"), TokenTag::KeywordCase),
-		make_pair(regex("default"), TokenTag::KeywordDefault),
-		make_pair(regex("break"), TokenTag::KeywordBreak),
-		make_pair(regex("return"), TokenTag::KeywordReturn),
-		make_pair(regex("module"), TokenTag::KeywordModule),
-		make_pair(regex("class"), TokenTag::KeywordClass),
-		make_pair(regex("interface"), TokenTag::KeywordInterface),
-		make_pair(regex("private"), TokenTag::KeywordPrivate),
-		make_pair(regex("public"), TokenTag::KeywordPublic),
+		make_pair(regex("^var"), TokenTag::KeywordVar),
+		make_pair(regex("^if"), TokenTag::KeywordIf),
+		make_pair(regex("^else if"), TokenTag::KeywordElseIf),
+		make_pair(regex("^else"), TokenTag::KeywordElse),
+		make_pair(regex("^for"), TokenTag::KeywordFor),
+		make_pair(regex("^while"), TokenTag::KeywordWhile),
+		make_pair(regex("^continue"), TokenTag::KeywordContinue),
+		make_pair(regex("^switch"), TokenTag::KeywordSwitch),
+		make_pair(regex("^case"), TokenTag::KeywordCase),
+		make_pair(regex("^default"), TokenTag::KeywordDefault),
+		make_pair(regex("^break"), TokenTag::KeywordBreak),
+		make_pair(regex("^return"), TokenTag::KeywordReturn),
+		make_pair(regex("^module"), TokenTag::KeywordModule),
+		make_pair(regex("^class"), TokenTag::KeywordClass),
+		make_pair(regex("^interface"), TokenTag::KeywordInterface),
+		make_pair(regex("^private"), TokenTag::KeywordPrivate),
+		make_pair(regex("^public"), TokenTag::KeywordPublic),
+		make_pair(regex("^extends"), TokenTag::KeywordExtends),
+		make_pair(regex("^implements"), TokenTag::KeywordImplements),
+
+		make_pair(regex(id), TokenTag::Id),
 
 		// Brackets
-		make_pair(regex("\\("), TokenTag::LeftParenthesis),
-		make_pair(regex("\\)"), TokenTag::RightParenthesis),
-		make_pair(regex("\\["), TokenTag::LeftSquareBracket),
-		make_pair(regex("\\]"), TokenTag::RightSquareBracket),
-		make_pair(regex("\\{"), TokenTag::LeftBrace),
-		make_pair(regex("\\}"), TokenTag::RightBrace),
+		make_pair(regex("^\\("), TokenTag::LeftParenthesis),
+		make_pair(regex("^\\)"), TokenTag::RightParenthesis),
+		make_pair(regex("^\\["), TokenTag::LeftSquareBracket),
+		make_pair(regex("^\\]"), TokenTag::RightSquareBracket),
+		make_pair(regex("^\\{"), TokenTag::LeftBrace),
+		make_pair(regex("^\\}"), TokenTag::RightBrace),
 
 		// Specials
-		make_pair(regex("\\."), TokenTag::Dot),
-		make_pair(regex(","), TokenTag::Comma),
-		make_pair(regex(":"), TokenTag::Colon),
-		make_pair(regex(";"), TokenTag::Semicolon),
+		make_pair(regex("^\\."), TokenTag::Dot),
+		make_pair(regex("^,"), TokenTag::Comma),
+		make_pair(regex("^:"), TokenTag::Colon),
+		make_pair(regex("^;"), TokenTag::Semicolon),
 
 		// Operators
 		make_pair(regex(unaryOp), TokenTag::UnaryOp),
+		make_pair(regex(binaryAssignment), TokenTag::BinaryAssignment),
 		make_pair(regex(binaryOp), TokenTag::BinaryOp),
-		make_pair(regex(relOp), TokenTag::RelativeOp),
-		make_pair(regex(boolOp), TokenTag::BoolOp),
 
 		// Other constructs
 		make_pair(regex(number), TokenTag::Number),
@@ -66,7 +68,6 @@ vector<pair<regex, TokenTag>> GeneratePatternMap()
 		make_pair(regex(ws), TokenTag::Whitespace),
 
 
-		make_pair(regex(id), TokenTag::Id),
 	};
 	return patternMap;
 }
@@ -84,7 +85,7 @@ Token LexicalAnalyzer::NextMatch(const string& text, int offset) const
 
 		smatch match;
 		regex_search(text.begin() + offset, text.end(), match, pattern);
-		if (!match.empty() && match.prefix().length() == 0)
+		if (!match.empty())
 		{
 			return Token(match[0], tag);
 		}

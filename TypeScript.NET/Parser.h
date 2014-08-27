@@ -3,6 +3,8 @@
 #include "Grammar.h"
 #include <map>
 #include <memory>
+#include <ostream>
+#include <istream>
 
 enum class ParsingActionType
 {
@@ -58,10 +60,16 @@ private:
 	void ComputeActionTable(void);
 
 public:
+	Parser()
+	{}
+
 	Parser(const Grammar& grammar) : grammar(grammar)
 	{
 		this->ComputeActionTable();
 	}
+
+	void Save(std::ostream& stream) const;
+	void Load(std::istream& stream);
 
 	std::shared_ptr<SyntaxTree> Parse(std::vector<Token>& text) const;
 	friend std::ostream& operator<<(std::ostream& o, const Parser& parser);

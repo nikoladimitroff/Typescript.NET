@@ -6,6 +6,7 @@
 #include <set>
 #include <map>
 #include <ostream>
+#include <istream>
 
 #include "Utilities.h"
 
@@ -56,8 +57,10 @@ public:
 	std::map<std::pair<int, std::string>, int> gotoTable;
 
 	dllspec Grammar(std::string start, std::map<std::string, RuleList> RuleList, bool shouldAugment);
+	Grammar()
+	{}
 
-	std::set<std::string> GetSymbols();
+	std::set<std::string> GetSymbols() const;
 
 	dllspec std::set<std::string> ComputeFirstWord(const std::vector<std::string>& word);
 	dllspec friend std::ostream& operator<<(std::ostream& stream, const Grammar& grammar);
@@ -65,6 +68,9 @@ public:
 	dllspec std::set<Item> GoTo(const std::set<Item>& setOfItems, const std::string& terminal);
 	dllspec void ComputeItems();
 	void ComputeLR1Items();
+
+	void Save(std::ostream& output) const;
+	void Load(std::istream& input);
 };
 
 dllspec void PrintClosure(const std::set<Item>& items, Grammar& g);
