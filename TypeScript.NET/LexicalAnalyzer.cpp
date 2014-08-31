@@ -4,7 +4,7 @@ using namespace std;
 
 vector<pair<regex, TokenTag>> GeneratePatternMap()
 {
-	string ws = R"(^\s+)",
+	string ws = R"(^(\s|\n)+)",
 		comment = R"(^(//.*?\n|/\*.*?\*/))",
 		number = R"(^((-)?\d+(\.\d+)?))",
 		boolLiteral = R"(^(true|false))",
@@ -17,6 +17,9 @@ vector<pair<regex, TokenTag>> GeneratePatternMap()
 
 	auto patternMap =
 	{
+
+		make_pair(regex(comment), TokenTag::Comment),
+
 		// Keywords
 		make_pair(regex("^var"), TokenTag::KeywordVar),
 		make_pair(regex("^if"), TokenTag::KeywordIf),
@@ -64,7 +67,7 @@ vector<pair<regex, TokenTag>> GeneratePatternMap()
 		make_pair(regex(boolLiteral), TokenTag::BoolLiteral),
 		make_pair(regex(stringLiteral), TokenTag::StringLiteral),
 		make_pair(regex(assignment), TokenTag::Assignment),
-		make_pair(regex(comment), TokenTag::Comment),
+
 		make_pair(regex(ws), TokenTag::Whitespace),
 
 

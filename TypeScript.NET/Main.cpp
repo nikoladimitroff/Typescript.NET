@@ -44,23 +44,38 @@ int main()
 	)";
 
 	code = R"( 
-		class A extends B implements I1, I2, I3 {
-			private x: number;
-			public computeMe(x: number, txt: string, flag: boolean): number {
-				var y: number = 5;
-				for (var i: number = 0; i < y; i++) {
-					var x: string = "texty";
-					txt = x[y + i];
+		module M {
+			class A extends B implements I1, I2, I3 {
+				private x: number;
+				public computeMe(x: number, txt: string, flag: boolean): number {
+					var y: number = 5;
+					for (var i: number = 0; i < y; i++) {
+						var x: string = "texty";
+						txt = x[y + i];
+						for (; i < y; i++) {}
+						txt = x[y + i];
+						txt = x[y + i];
+						for (var i: number = 0; ; ++i) {
+							if (i == 10) {
+								break;
+								for (;;)
+									continue;
+							}
+						}
+					}
 				}
 			}
 		}
 	)";
 
-	Translators::TsToCSharp translator(true);
+	Translators::TsToCSharp translator(false);
+
 
 	try
 	{
-		cout << translator.Translate(code);
+		ofstream file("code.cs");
+		file << translator.Translate(code);
+		file.close();
 	}
 	catch (invalid_argument& e)
 	{

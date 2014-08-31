@@ -14,7 +14,7 @@ void SyntaxTree::ReverseChildren()
 void SyntaxTree::PrintTree(ostream& o, int indentation) const
 {
 	for (int i = 0; i < indentation; i++)
-		o << '|' << string(3, ' ');
+		o << '|' << ' ';
 	o << this->Node.GetLexeme() << endl;
 	for (auto& node : this->Children)
 		node->PrintTree(o, indentation + 1);

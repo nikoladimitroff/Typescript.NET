@@ -14,23 +14,43 @@ using namespace Translators;
 map<string, vector<vector<string>>> ifGrammar =
 {
 	{
+		"Program",
+		{
+			{ "Module", },
+			{ "Class", },
+		},
+	},
+	{
 		"Statement",
 		{
 			{ "If" },
 			{ "While" },
 			{ "For" },
 			{ "VarDeclaration" },
-			{ "Expression", ";" },
-			{ "Class" },
-			{ "{", "Statement", "}" },
-			{ "Statement", "Statement" },
-			{ "{", "}", },
+			{ "ExpressionHeader", ";" },
+			{ "StatementList" },
+			// break / continue
+			{ "OtherControlStatements", ";" },
+		},
+	},
+	{
+		"StatementList",
+		{
+			{ "{", "}" },
+			{ "{", "StatementListBody", "}" },
+		},
+	},
+	{
+		"StatementListBody",
+		{
+			{ "Statement", "StatementListBody" },
+			{ "Statement", },
 		},
 	},
 	{
 		"If",
 		{
-			{ "if", "(", "Expression", ")", "Statement" },
+			{ "if", "(", "ExpressionHeader", ")", "Statement" },
 			{ "If", "Else" },
 		},
 	},
@@ -43,33 +63,40 @@ map<string, vector<vector<string>>> ifGrammar =
 	{
 		"While",
 		{
-			{ "while", "(", "Expression", ")", "Statement" },
+			{ "while", "(", "ExpressionHeader", ")", "Statement" },
 		},
 	},
 	{
 		"For",
 		{
-			{ "for", "(", "ForBody", ")", "Statement" },
+			{ "for", "(", "ForHead", ")", "Statement" },
 		},
 	},
 	{
-		"ForBody",
+		"ForHead",
 		{
-			{ "VarDeclaration", "Expression", ";", "Expression" },
-			//{ ";", "Expression", ";", "Expression" },
-			//{ ";", ";", "Expression" },
-			//{ ";", ";" },
-			////{ "VarDeclaration", ";", "Expression" },
-			//{ "VarDeclaration", ";" },
-			//{ "VarDeclaration", "Expression", ";" },
-			//{ ";", "Expression", ";" },
+			{ "VarDeclaration", "ExpressionHeader", ";", "ExpressionHeader" },
+			{ ";", "ExpressionHeader", ";", "ExpressionHeader" },
+			{ ";", ";", "ExpressionHeader" },
+			{ ";", ";" },
+			{ "VarDeclaration", ";", "ExpressionHeader" },
+			{ "VarDeclaration", ";" },
+			{ "VarDeclaration", "ExpressionHeader", ";" },
+			{ ";", "ExpressionHeader", ";" },
 		},
+	},
+	{
+		"OtherControlStatements",
+		{
+			{ "break" },
+			{ "continue" },
+		}
 	},
 	{
 		"VarDeclaration",
 		{
 			{ "var", "id", ":", "id", ";" },
-			{ "var", "id", ":", "id", "=", "Expression", ";" },
+			{ "var", "id", ":", "id", "=", "ExpressionHeader", ";" },
 		},
 	},
 	{
@@ -78,6 +105,12 @@ map<string, vector<vector<string>>> ifGrammar =
 			{ "class", "id", "{", "ClassBody", "}" },
 			{ "class", "id", "BaseClasses", "{", "ClassBody", "}" },
 		},
+	},
+	{
+		"Module",
+		{
+			{ "module", "id", "{", "Program", "}" }
+		}
 	},
 	{
 		"BaseClasses",
@@ -113,8 +146,8 @@ map<string, vector<vector<string>>> ifGrammar =
 	{
 		"ClassMethod",
 		{
-			{ "VisibilitySpecifier", "id", "(", "ArgumentList", ")", ":", "TypeId", "{", "Statement", "}" },
-			{ "VisibilitySpecifier", "id", "(", ")", ":", "TypeId", "{", "Statement", "}" },
+			{ "VisibilitySpecifier", "id", "(", "ArgumentList", ")", ":", "TypeId", "StatementList" },
+			{ "VisibilitySpecifier", "id", "(", ")", ":", "TypeId", "StatementList" },
 		},
 	},
 	{
@@ -138,6 +171,12 @@ map<string, vector<vector<string>>> ifGrammar =
 		},
 	},
 	{
+		"ExpressionHeader",
+		{
+			{ "Expression" }
+		}
+	},
+	{
 		"Expression",
 		{
 			{ "LValue" },
@@ -149,21 +188,20 @@ map<string, vector<vector<string>>> ifGrammar =
 			{ "LValue", "=", "Expression" },
 			{ "LValue", "BINARY_ASSIGNMENT", "Expression" },
 			{ "Expression", "BINARY_OP", "Expression" },
-			{ "(", "Expression", ")" },
-
+			{ "(", "ExpressionHeader", ")" },
 		},
 	},
 	{
 		"LValue",
 		{
 			{ "id" },
-			{ "id", "[", "Expression", "]" },
+			{ "id", "[", "ExpressionHeader", "]" },
 		}
 	},
 };
 
 
-TsToCSharp::TsToCSharp() : grammar("Statement", ifGrammar, true), parser(this->grammar)
+TsToCSharp::TsToCSharp() : grammar("Program", ifGrammar, true), parser(this->grammar)
 {
 	ofstream file("tscs.txt");
 	this->parser.Save(file);
@@ -182,61 +220,64 @@ void TranslateSubtree(const SyntaxTree&, ostream&, int);
 
 namespace translate
 {
+	void RemoveLastSymbol(ostream& stream)
+	{
+		stream.seekp(static_cast<int>(stream.tellp()) - 1);
+	}
+
 	void TranslateStatement(const SyntaxTree& tree, ostream& stream, int indentation)
 	{
 		if (tree.Children.size() == 1)
 		{
+			// Statement -> If/while/for/statementlist;
 			for (auto& child : tree.Children)
 				TranslateSubtree(*child, stream, indentation);
 		}
 		if (tree.Children.size() == 2)
-
 		{
-			if (tree.Children[0]->Node.GetTag() == TokenTag::Nonterminal)
-			{
-				if (tree.Children[1]->Node.GetTag() == TokenTag::Nonterminal)
-				{
-					// Statement -> Statement Statement
-					TranslateSubtree(*tree.Children[0], stream, indentation);
-					TranslateSubtree(*tree.Children[1], stream, indentation);
-				}
-				else
-				{
-					// Statement -> Expression ;
-					TranslateSubtree(*tree.Children[0], stream, indentation);
-					stream << tree.Children[1]->Node.GetLexeme() << endl;
-				}
-			}
-			else
-			{
-				// Statement -> { } (empty block)
-				stream << string(indentation * 4, ' ') << tree.Children[0]->Node.GetLexeme();
-				stream << ' ';
-				stream << tree.Children[1]->Node.GetLexeme() << endl;
-			}
+			// Statement -> Expression ; | continue ; | break ;
+			TranslateSubtree(*tree.Children[0], stream, indentation);
+			stream << tree.Children[1]->Node.GetLexeme();
 		}
+	}
 
+	void TranslateStatementListBody(const SyntaxTree& tree, ostream& stream, int indentation)
+	{
+		stream << endl;
+		if (tree.Children.size() == 1)
+		{
+			TranslateStatement(*tree.Children[0], stream, indentation);
+		}
+		else
+		{
+			TranslateStatement(*tree.Children[0], stream, indentation);
+			TranslateStatementListBody(*tree.Children[1], stream, indentation);
+		}
+	}
+
+	void TranslateStatementList(const SyntaxTree& tree, ostream& stream, int indentation)
+	{
+		string indent(indentation * 4, ' ');
+		stream << indent << tree.Children[0]->Node.GetLexeme(); // {
 		if (tree.Children.size() == 3)
 		{
-			// Statement -> { Statement }
-			stream << string(indentation * 4, ' ') << tree.Children[0]->Node.GetLexeme() << endl;
-			TranslateSubtree(*tree.Children[1], stream, indentation + 1);
-			stream << string(indentation * 4, ' ') << tree.Children[2]->Node.GetLexeme() << endl;
+			TranslateStatementListBody(*tree.Children[1], stream, indentation + 1);
+			stream << endl << indent;
 		}
+		stream << tree.Children[tree.Children.size() - 1]->Node.GetLexeme(); // }
 	}
 
 	void TranslateControlFlow(const SyntaxTree& tree, ostream& stream, int indentation)
 	{
-		stream << endl;
 		if (tree.Children.size() == 5)
 		{
-			// Control Flow -> if/while/for ( Bool / ForBody ) Statement
+			// Control Flow -> if/while/for ( Bool / ForHead ) Statement
 			stream << string(indentation * 4, ' ') << tree.Children[0]->Node.GetLexeme();/* keyword */
 			stream << ' ';
 			stream << tree.Children[1]->Node.GetLexeme();  /* ( */
-			TranslateSubtree(*tree.Children[2], stream, 0); /* condition / forbody*/
+			TranslateSubtree(*tree.Children[2], stream, 0); /* condition / ForHead*/
 			stream << tree.Children[3]->Node.GetLexeme() << endl; /* ) */
-			TranslateSubtree(*tree.Children[4], stream, indentation + 1); /* Statement */
+			TranslateSubtree(*tree.Children[4], stream, indentation); /* Statement */
 		}
 
 		if (tree.Children.size() == 2)
@@ -247,22 +288,28 @@ namespace translate
 		}
 	}
 
-	void TranslateForBody(const SyntaxTree& tree, ostream& stream, int indentation)
+	void TranslateForHead(const SyntaxTree& tree, ostream& stream, int indentation)
 	{
-		for (auto& child : tree.Children)
+		for (auto it = tree.Children.begin(); it != tree.Children.end(); ++it)
 		{
+			auto& child = *it;
+			// Place a space before every subtree but the first
+			if (child->Node.GetTag() == TokenTag::Nonterminal && it != tree.Children.begin())
+				stream << ' ';
+
 			TranslateSubtree(*child, stream, indentation);
 		}
-	}
-
-	void TranslateBlock(const SyntaxTree& tree, ostream& stream, int indentation)
-	{
 	}
 
 	void TranslateElse(const SyntaxTree& tree, ostream& stream, int indentation)
 	{
 		stream << string(indentation * 4, ' ') << tree.Children[0]->Node.GetLexeme() << '\n';
 		TranslateSubtree(*tree.Children[1], stream, indentation + 1);
+	}
+
+	void TranslateOtherControlFlow(const SyntaxTree& tree, ostream& stream, int indentation)
+	{
+		stream << string(indentation * 4, ' ') << tree.Children[0]->Node.GetLexeme();
 	}
 
 	void TranslateExpression(const SyntaxTree& tree, ostream& stream, int indentation)
@@ -272,17 +319,56 @@ namespace translate
 			(tree.Children[0]->Node.GetTag() == TokenTag::UnaryOp ||
 			tree.Children[1]->Node.GetTag() == TokenTag::UnaryOp);
 
+		if (isUnary)
+		{
+			if (tree.Children[0]->Node.GetTag() == TokenTag::UnaryOp)
+			{
+				stream << tree.Children[0]->Node.GetLexeme();
+				TranslateSubtree(*tree.Children[1], stream, 0);
+			}
+			else
+			{
+				TranslateSubtree(*tree.Children[0], stream, 0);
+				RemoveLastSymbol(stream);
+				stream << tree.Children[1]->Node.GetLexeme();
+				stream << ' ';
+			}
+			return;
+		}
 
 		for (auto& child : tree.Children)
 		{
 			if (child->Node.GetTag() == TokenTag::Nonterminal)
-				TranslateExpression(*child, stream, 0);
+			{
+				TranslateSubtree(*child, stream, 0);
+			}
 			else
 			{
-				if (!isUnary)
-					stream << ' ';
 				stream << child->Node.GetLexeme();
+				stream << ' ';
 			}
+		}
+	}
+
+	void TranslateExpressionHeader(const SyntaxTree& tree, ostream& stream, int indentation)
+	{
+		TranslateExpression(*tree.Children[0], stream, indentation);
+		RemoveLastSymbol(stream);
+	}
+
+	void TranslateLvalue(const SyntaxTree& tree, ostream& stream, int indentation)
+	{
+		if (tree.Children.size() == 1)
+		{
+			stream << tree.Children[0]->Node.GetLexeme() << ' ';
+		}
+		else
+		{
+			stream << tree.Children[0]->Node.GetLexeme();
+			stream << tree.Children[1]->Node.GetLexeme();
+			TranslateExpressionHeader(*tree.Children[2], stream, 0);
+			stream << tree.Children[3]->Node.GetLexeme();
+			stream << ' ';
 		}
 	}
 
@@ -315,8 +401,8 @@ namespace translate
 		if (tree.Children.size() == 7)
 		{
 			// Initialization
-			stream << ' ' << tree.Children[4]->Node.GetLexeme() << ' ';
-			TranslateExpression(*tree.Children[5], stream, 0);
+			stream << ' ' << tree.Children[4]->Node.GetLexeme() << ' '; // =
+			TranslateExpressionHeader(*tree.Children[5], stream, 0); // expression
 		}
 		stream << tree.Children[tree.Children.size() - 1]->Node.GetLexeme();
 	}
@@ -363,19 +449,17 @@ namespace translate
 	{
 		string indent(indentation * 4, ' ');
 		stream << indent << tree.Children[0]->Children[0]->Node.GetLexeme() << ' ';
-		auto typeId = tree.Children.size() == 10 ? tree.Children[6] : tree.Children[5];
+		auto typeId = tree.Children.size() == 8 ? tree.Children[6] : tree.Children[5];
 
 		TranslateTypeId(*typeId, stream, 0);
 		stream << ' ' << tree.Children[1]->Node.GetLexeme();
 		stream << "(";
-		if (tree.Children.size() == 10)
+		if (tree.Children.size() == 8)
 			// We've got args!
 			TranslateArgList(*tree.Children[3], stream, 0);
 
 		stream << ")" << endl;
-		stream << indent << "{" << endl;
-		TranslateStatement(*tree.Children[tree.Children.size() - 2], stream, indentation + 1);
-		stream << endl << indent << "}";
+		TranslateStatementList(*tree.Children[tree.Children.size() - 1], stream, indentation);
 	}
 
 	void TranslateClassBody(const SyntaxTree& tree, ostream& stream, int indentation)
@@ -428,24 +512,37 @@ namespace translate
 		TranslateSubtree(*tree.Children[tree.Children.size() - 2], stream, indentation + 1);
 		stream << endl << indent << "}" << endl;
 	}
+
+	void TranslateModule(const SyntaxTree& tree, ostream& stream, int indentation)
+	{
+		string indent(indentation * 4, ' ');
+		stream << indent << "namespace" << ' ' << tree.Children[1]->Node.GetLexeme() << endl;
+		stream << indent << '{' << endl;
+		TranslateSubtree(*tree.Children[3], stream, indentation + 1);
+		stream << indent << '}' << endl;
+	}
 }
 
 map<string, function<void(const SyntaxTree&, ostream&, int)>> TranslatorFunctions =
 {
-	{ "Block", translate::TranslateBlock },
+	{ "StatementList", translate::TranslateStatementList },
 	{ "If", translate::TranslateControlFlow },
 	{ "Else", translate::TranslateElse },
 	{ "While", translate::TranslateControlFlow },
 	{ "For", translate::TranslateControlFlow },
-	{ "ForBody", translate::TranslateForBody },
+	{ "ForHead", translate::TranslateForHead },
+	{ "OtherControlStatements", translate::TranslateOtherControlFlow },
 	{ "VarDeclaration", translate::TranslateVarDeclaration },
 	{ "Class", translate::TranslateClass },
 	{ "ClassBody", translate::TranslateClassBody },
 	{ "ClassMethod", translate::TranslateClassMethod },
 	{ "ClassField", translate::TranslateClassField },
 	{ "IdList", translate::TranslateIdList },
+	{ "Module", translate::TranslateModule },
 
 	{ "Expression", translate::TranslateExpression },
+	{ "ExpressionHeader", translate::TranslateExpressionHeader },
+	{ "LValue", translate::TranslateLvalue }
 };
 
 
@@ -461,7 +558,7 @@ void TranslateSubtree(const SyntaxTree& tree, ostream& stream, int indentation)
 	if (TranslatorFunctions.find(txt) != TranslatorFunctions.end())
 		TranslatorFunctions[txt](tree, stream, indentation);
 	else
-		translate::TranslateStatement(tree, stream, indentation + 1);
+		translate::TranslateStatement(tree, stream, indentation);
 }
 
 string TsToCSharp::Translate(string source)
