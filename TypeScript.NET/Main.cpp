@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <streambuf>
 #include <sstream>
 #include <iterator>
 
@@ -13,74 +14,36 @@
 
 using namespace std;
 
-int main()
+int main(int argc, char** argv)
 {
-	map<string, vector<vector<string>>> ifGrammar =
+	if (argc == 1)
 	{
-		//{ "Statement", { { "s", "Statement" }, { EPSILON() } } }
-		{
-			"Statement",
-			{
-				{ "if", "(", "Bool", ")", "Statement" },
-				{ "if", "(", "Bool", ")", "Statement", "else", "Statement" },
-				{ "while", "(", "Bool", ")", "Statement" },
-				{ "{", "}" }
-			}
-		},
-		{ "Bool", { { "BOOL_LITERAL" }, { "NUMBER", "RELATIVE_OP", "NUMBER" }, { "Bool", "BOOL_OP", "Bool" } } },
-	};
+		cout << "Source file not specified. Call the compiler using 'tsnet <path_to_source>'\n";
+		return -1;
+	}
+
+	string sourcePath = argv[1];
+	Translators::TsToCSharp translator;
 
 
-	string code = R"( 
-		class A extends B implements I1, I2 {
-			private x: number;
-			
-			public myMethod(x: number, y: string): void {
-				for (var i: number; i ; i++) {
-					y += y;
-				}
-			}
-		}
-	)";
-
-	code = R"( 
-		module M {
-			class A extends B implements I1, I2, I3 {
-				private x: number;
-				public computeMe(x: number, txt: string, flag: boolean): number {
-					var y: number = 5;
-					for (var i: number = 0; i < y; i++) {
-						var x: string = "texty";
-						txt = x[y + i];
-						for (; i < y; i++) {}
-						txt = x[y + i];
-						txt = x[y + i];
-						for (var i: number = 0; ; ++i) {
-							if (i == 10) {
-								break;
-								for (;;)
-									continue;
-							}
-						}
-					}
-				}
-			}
-		}
-	)";
-
-	Translators::TsToCSharp translator(false);
-
-
-	try
-	{
-		ofstream file("code.cs");
-		file << translator.Translate(code);
-		file.close();
+	auto dot = sourcePath.find_last_of('.');
+	string outputPath = sourcePath.substr(0, dot) + ".cs";
+	ifstream inputFile(sourcePath);
+	string code((istreambuf_iterator<char>(inputFile)),
+				 istreambuf_iterator<char>());
+	inputFile.close();
+	ofstream outputFile(outputPath);
+		
+	try {
+		cout << "Translating..." << endl;
+		outputFile << translator.Translate(code);
 	}
 	catch (invalid_argument& e)
 	{
 		cout << e.what();
 	}
+	outputFile.close();
+	cout << "Done." << endl;
 	cout << endl << "Press any key to continue" << endl;
 	cin.get();
 

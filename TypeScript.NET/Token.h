@@ -26,6 +26,8 @@ enum class dllspec TokenTag
 	KeywordInterface, 
 	KeywordPrivate,
 	KeywordPublic,
+	KeywordExport,
+	KeywordStatic,
 	KeywordExtends,
 	KeywordImplements,
 
@@ -78,6 +80,8 @@ namespace
 		"interface",
 		"private",
 		"public",
+		"export",
+		"static",
 		"extends",
 		"implements",
 

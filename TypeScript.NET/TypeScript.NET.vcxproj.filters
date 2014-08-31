@@ -61,7 +61,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Sample.ts">
+    <None Include="SampleTS">
       <Filter>Resource Files\Typescript</Filter>
     </None>
   </ItemGroup>

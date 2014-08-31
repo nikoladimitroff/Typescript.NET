@@ -11,9 +11,11 @@ namespace Translators
 	private:
 		Grammar grammar;
 		Parser parser;
+		static std::string ParserDataFile;
+
+		static bool ParserDataExists();
 	public:
 		TsToCSharp();
-		TsToCSharp(bool load);
 		std::string Translate(std::string source);
 	};
 

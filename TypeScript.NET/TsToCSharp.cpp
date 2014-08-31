@@ -11,7 +11,9 @@ using namespace std;
 using namespace Translators;
 
 
-map<string, vector<vector<string>>> ifGrammar =
+string TsToCSharp::ParserDataFile = "tsnet_parser.data";
+
+map<string, vector<vector<string>>> tsGrammar =
 {
 	{
 		"Program",
@@ -28,7 +30,7 @@ map<string, vector<vector<string>>> ifGrammar =
 			{ "For" },
 			{ "VarDeclaration" },
 			{ "ExpressionHeader", ";" },
-			{ "StatementList" },
+			{ "return", "ExpressionHeader", ";" },
 			// break / continue
 			{ "OtherControlStatements", ";" },
 		},
@@ -38,6 +40,7 @@ map<string, vector<vector<string>>> ifGrammar =
 		{
 			{ "{", "}" },
 			{ "{", "StatementListBody", "}" },
+			{ "Statement" },
 		},
 	},
 	{
@@ -50,26 +53,26 @@ map<string, vector<vector<string>>> ifGrammar =
 	{
 		"If",
 		{
-			{ "if", "(", "ExpressionHeader", ")", "Statement" },
+			{ "if", "(", "ExpressionHeader", ")", "StatementList" },
 			{ "If", "Else" },
 		},
 	},
 	{
 		"Else",
 		{
-			{ "else", "Statement" },
+			{ "else", "StatementList" },
 		},
 	},
 	{
 		"While",
 		{
-			{ "while", "(", "ExpressionHeader", ")", "Statement" },
+			{ "while", "(", "ExpressionHeader", ")", "StatementList" },
 		},
 	},
 	{
 		"For",
 		{
-			{ "for", "(", "ForHead", ")", "Statement" },
+			{ "for", "(", "ForHead", ")", "StatementList" },
 		},
 	},
 	{
@@ -102,6 +105,8 @@ map<string, vector<vector<string>>> ifGrammar =
 	{
 		"Class",
 		{
+			{ "export", "class", "id", "{", "ClassBody", "}" },
+			{ "export", "class", "id", "BaseClasses", "{", "ClassBody", "}" },
 			{ "class", "id", "{", "ClassBody", "}" },
 			{ "class", "id", "BaseClasses", "{", "ClassBody", "}" },
 		},
@@ -109,7 +114,8 @@ map<string, vector<vector<string>>> ifGrammar =
 	{
 		"Module",
 		{
-			{ "module", "id", "{", "Program", "}" }
+			{ "export", "module", "id", "{", "Program", "}" },
+			{ "module", "id", "{", "Program", "}" },
 		}
 	},
 	{
@@ -131,8 +137,17 @@ map<string, vector<vector<string>>> ifGrammar =
 	{
 		"ClassBody",
 		{
-			{ "ClassBody", "ClassField" },
-			{ "ClassBody", "ClassMethod" },
+			{ "ClassBody", "ClassMember" },
+			{ "ClassMember" },
+		},
+	},
+	{
+		"ClassMember",
+		{
+			{ "VisibilitySpecifier", "static", "ClassField" },
+			{ "VisibilitySpecifier", "static", "ClassMethod" },
+			{ "VisibilitySpecifier", "ClassField" },
+			{ "VisibilitySpecifier", "ClassMethod" },
 			{ "ClassField" },
 			{ "ClassMethod" },
 		},
@@ -140,14 +155,14 @@ map<string, vector<vector<string>>> ifGrammar =
 	{
 		"ClassField",
 		{
-			{ "VisibilitySpecifier", "id", ":", "TypeId", ";"},
+			{ "id", ":", "TypeId", ";"},
 		},
 	},
 	{
 		"ClassMethod",
 		{
-			{ "VisibilitySpecifier", "id", "(", "ArgumentList", ")", ":", "TypeId", "StatementList" },
-			{ "VisibilitySpecifier", "id", "(", ")", ":", "TypeId", "StatementList" },
+			{ "id", "(", "ArgumentList", ")", ":", "TypeId", "StatementList" },
+			{ "id", "(", ")", ":", "TypeId", "StatementList" },
 		},
 	},
 	{
@@ -189,37 +204,64 @@ map<string, vector<vector<string>>> ifGrammar =
 			{ "LValue", "BINARY_ASSIGNMENT", "Expression" },
 			{ "Expression", "BINARY_OP", "Expression" },
 			{ "(", "ExpressionHeader", ")" },
+			{ "LValue", "(", "ExpressionList", ")"  } // Function call
 		},
 	},
 	{
 		"LValue",
 		{
 			{ "id" },
+			{ "id", ".", "id" },
 			{ "id", "[", "ExpressionHeader", "]" },
+		}
+	},
+	{
+		"ExpressionList",
+		{
+			{ "ExpressionHeader" },
+			{ "ExpressionHeader", ",", "ExpressionList" },
 		}
 	},
 };
 
 
-TsToCSharp::TsToCSharp() : grammar("Program", ifGrammar, true), parser(this->grammar)
+bool TsToCSharp::ParserDataExists()
 {
-	ofstream file("tscs.txt");
-	this->parser.Save(file);
+	fstream file(TsToCSharp::ParserDataFile, fstream::in);
+	bool exists = file.good();
 	file.close();
+	return exists;
+
 }
 
-TsToCSharp::TsToCSharp(bool load)
+TsToCSharp::TsToCSharp()
 {
-	ifstream input("tscs.txt");
-	this->parser.Load(input);
-	input.close();
-}	
+	fstream file;
+
+	if (TsToCSharp::ParserDataExists())
+	{
+		file.open(TsToCSharp::ParserDataFile, fstream::in);
+		cout << "Found parser data. Loading..." << endl;
+		this->parser.Load(file);
+	}
+	else
+	{
+		file.open(TsToCSharp::ParserDataFile, fstream::out);
+		cout << "Missing parser data. Regenerating now, be patient and make sure I have admin privileges." << endl;
+		this->grammar = Grammar("Program", tsGrammar, true);
+		this->parser = Parser(this->grammar);
+		this->parser.Save(file);
+	}
+	file.close();
+	cout << "Done" << endl;
+}
 
 void TranslateSubtree(const SyntaxTree&, ostream&, int);
 
 
 namespace translate
 {
+	int SpacesPerIndent = 4;
 	void RemoveLastSymbol(ostream& stream)
 	{
 		stream.seekp(static_cast<int>(stream.tellp()) - 1);
@@ -239,6 +281,14 @@ namespace translate
 			TranslateSubtree(*tree.Children[0], stream, indentation);
 			stream << tree.Children[1]->Node.GetLexeme();
 		}
+		if (tree.Children.size() == 3)
+		{
+			// Statement -> return Expression ;
+			stream << string(indentation * SpacesPerIndent, ' ');
+			stream << tree.Children[0]->Node.GetLexeme() << ' ';
+			TranslateSubtree(*tree.Children[1], stream, 0);
+			stream << ';';
+		}
 	}
 
 	void TranslateStatementListBody(const SyntaxTree& tree, ostream& stream, int indentation)
@@ -257,8 +307,17 @@ namespace translate
 
 	void TranslateStatementList(const SyntaxTree& tree, ostream& stream, int indentation)
 	{
-		string indent(indentation * 4, ' ');
-		stream << indent << tree.Children[0]->Node.GetLexeme(); // {
+
+		if (tree.Children.size() == 1) // StatementList -> Statement
+		{
+			TranslateSubtree(*tree.Children[0], stream, indentation + 1);
+			return;
+		}
+
+		string indent(indentation * SpacesPerIndent, ' ');
+		stream << indent;
+		// StatementList -> { StatementListBody[opt] }
+		stream << tree.Children[0]->Node.GetLexeme(); // {
 		if (tree.Children.size() == 3)
 		{
 			TranslateStatementListBody(*tree.Children[1], stream, indentation + 1);
@@ -271,13 +330,13 @@ namespace translate
 	{
 		if (tree.Children.size() == 5)
 		{
-			// Control Flow -> if/while/for ( Bool / ForHead ) Statement
-			stream << string(indentation * 4, ' ') << tree.Children[0]->Node.GetLexeme();/* keyword */
+			// Control Flow -> if/while/for ( Bool / ForHead ) StatementList
+			stream << string(indentation * SpacesPerIndent, ' ') << tree.Children[0]->Node.GetLexeme();/* keyword */
 			stream << ' ';
 			stream << tree.Children[1]->Node.GetLexeme();  /* ( */
 			TranslateSubtree(*tree.Children[2], stream, 0); /* condition / ForHead*/
 			stream << tree.Children[3]->Node.GetLexeme() << endl; /* ) */
-			TranslateSubtree(*tree.Children[4], stream, indentation); /* Statement */
+			TranslateSubtree(*tree.Children[4], stream, indentation); /* StatementList */
 		}
 
 		if (tree.Children.size() == 2)
@@ -303,18 +362,18 @@ namespace translate
 
 	void TranslateElse(const SyntaxTree& tree, ostream& stream, int indentation)
 	{
-		stream << string(indentation * 4, ' ') << tree.Children[0]->Node.GetLexeme() << '\n';
+		stream << string(indentation * SpacesPerIndent, ' ') << tree.Children[0]->Node.GetLexeme() << '\n';
 		TranslateSubtree(*tree.Children[1], stream, indentation + 1);
 	}
 
 	void TranslateOtherControlFlow(const SyntaxTree& tree, ostream& stream, int indentation)
 	{
-		stream << string(indentation * 4, ' ') << tree.Children[0]->Node.GetLexeme();
+		stream << string(indentation * SpacesPerIndent, ' ') << tree.Children[0]->Node.GetLexeme();
 	}
 
 	void TranslateExpression(const SyntaxTree& tree, ostream& stream, int indentation)
 	{
-		stream << string(indentation * 4, ' ');
+		stream << string(indentation * SpacesPerIndent, ' ');
 		bool isUnary = tree.Children.size() == 2 &&
 			(tree.Children[0]->Node.GetTag() == TokenTag::UnaryOp ||
 			tree.Children[1]->Node.GetTag() == TokenTag::UnaryOp);
@@ -362,8 +421,16 @@ namespace translate
 		{
 			stream << tree.Children[0]->Node.GetLexeme() << ' ';
 		}
-		else
+		else if (tree.Children.size() == 3)
 		{
+			// Member access
+			stream << tree.Children[0]->Node.GetLexeme();
+			stream << tree.Children[1]->Node.GetLexeme();;
+			stream << tree.Children[2]->Node.GetLexeme();
+		}
+		else
+		{   
+			// Array access
 			stream << tree.Children[0]->Node.GetLexeme();
 			stream << tree.Children[1]->Node.GetLexeme();
 			TranslateExpressionHeader(*tree.Children[2], stream, 0);
@@ -394,7 +461,7 @@ namespace translate
 
 	void TranslateVarDeclaration(const SyntaxTree& tree, ostream& stream, int indentation)
 	{
-		stream << string(indentation * 4, ' ');
+		stream << string(indentation * SpacesPerIndent, ' ');
 		TranslateTypeId(*tree.Children[3], stream, 0); 
 		stream << ' ';
 		stream << tree.Children[1]->Node.GetLexeme();
@@ -409,10 +476,8 @@ namespace translate
 
 	void TranslateClassField(const SyntaxTree& tree, ostream& stream, int indentation)
 	{
-		string indent(indentation * 4, ' ');
-		stream << indent << tree.Children[0]->Children[0]->Node.GetLexeme() << ' ';
-		TranslateTypeId(*tree.Children[3], stream, 0);
-		stream << ' ' << tree.Children[1]->Node.GetLexeme() << ';' << endl;
+		TranslateTypeId(*tree.Children[2], stream, 0);
+		stream << ' ' << tree.Children[0]->Node.GetLexeme() << ';' << endl;
 	}
 
 	void TranslateArgList(const SyntaxTree& tree, ostream& stream, int indentation)
@@ -434,9 +499,9 @@ namespace translate
 
 	}
 
-	void TranslateIdList(const SyntaxTree& tree, ostream& stream, int indentation)
+	void TranslateCommaList(const SyntaxTree& tree, ostream& stream, int indentation)
 	{
-		stream << tree.Children[0]->Node.GetLexeme();
+		TranslateSubtree(*tree.Children[0], stream, 0);
 
 		if (tree.Children.size() > 1)
 		{
@@ -447,19 +512,42 @@ namespace translate
 
 	void TranslateClassMethod(const SyntaxTree& tree, ostream& stream, int indentation)
 	{
-		string indent(indentation * 4, ' ');
-		stream << indent << tree.Children[0]->Children[0]->Node.GetLexeme() << ' ';
-		auto typeId = tree.Children.size() == 8 ? tree.Children[6] : tree.Children[5];
+		auto typeId = tree.Children.size() == 7 ? tree.Children[5] : tree.Children[4];
 
 		TranslateTypeId(*typeId, stream, 0);
-		stream << ' ' << tree.Children[1]->Node.GetLexeme();
+		stream << ' ' << tree.Children[0]->Node.GetLexeme();
 		stream << "(";
-		if (tree.Children.size() == 8)
+		if (tree.Children.size() == 7)
 			// We've got args!
-			TranslateArgList(*tree.Children[3], stream, 0);
+			TranslateArgList(*tree.Children[2], stream, 0);
 
 		stream << ")" << endl;
 		TranslateStatementList(*tree.Children[tree.Children.size() - 1], stream, indentation);
+	}
+
+	void TranslateClassMember(const SyntaxTree& tree, ostream& stream, int indentation)
+	{
+		string indent(indentation * SpacesPerIndent, ' ');
+		string visibility = "private";
+		bool isStatic = false;
+		if (tree.Children[0]->Node.GetLexeme() == "VisibilitySpecifier")
+		{
+			visibility = tree.Children[0]->Children[0]->Node.GetLexeme();
+			if (tree.Children[1]->Node.GetLexeme() == "static")
+			{
+				isStatic = true;
+			}
+		}
+		else if (tree.Children[0]->Node.GetLexeme() == "static")
+		{
+			isStatic = true;
+		}
+
+		stream << indent << visibility << ' ';
+		if (isStatic)
+			stream << "static" << ' ';
+		TranslateSubtree(*tree.Children[tree.Children.size() - 1], stream, indentation);
+
 	}
 
 	void TranslateClassBody(const SyntaxTree& tree, ostream& stream, int indentation)
@@ -467,6 +555,7 @@ namespace translate
 		if (tree.Children.size() == 2)
 		{
 			TranslateClassBody(*tree.Children[0], stream, indentation);
+			stream << endl;
 			TranslateSubtree(*tree.Children[1], stream, indentation);
 		}
 		else
@@ -500,25 +589,42 @@ namespace translate
 		{
 			{ "class", "id", "{", "ClassBody", "}" },
 			{ "class", "id", "BaseClasses", "{", "ClassBody", "}" },
+			{ "export", "class", "id", "{", "ClassBody", "}" },
+			{ "export", "class", "id", "BaseClasses", "{", "ClassBody", "}" },
 		},*/
-		string indent(indentation * 4, ' ');
-		stream << indent << "class ";
-		TranslateTypeId(*tree.Children[1], stream, 0);
+		string indent(indentation * SpacesPerIndent, ' ');
+		stream << indent;
+		int startIndex = 0;
+		if (tree.Children[0]->Node.GetLexeme() == "export")
+		{
+			stream << "public" << ' ';
+			startIndex++;
+		}
+		stream << "class ";
+		TranslateTypeId(*tree.Children[startIndex + 1], stream, 0);
 
-		if (tree.Children.size() == 6)
-			TranslateBaseClasses(*tree.Children[2], stream, 0);
+		if (tree.Children.size() == 6 || tree.Children.size() == 7)
+			TranslateBaseClasses(*tree.Children[tree.Children.size() - 4], stream, 0); // BaseClasses
 
 		stream << endl << indent << "{" << endl;
-		TranslateSubtree(*tree.Children[tree.Children.size() - 2], stream, indentation + 1);
+		TranslateSubtree(*tree.Children[tree.Children.size() - 2], stream, indentation + 1); // ClassBody
 		stream << endl << indent << "}" << endl;
 	}
 
 	void TranslateModule(const SyntaxTree& tree, ostream& stream, int indentation)
 	{
-		string indent(indentation * 4, ' ');
-		stream << indent << "namespace" << ' ' << tree.Children[1]->Node.GetLexeme() << endl;
+		int firstIndex = 0;
+		// Skip the export since C# doesn't allow for anything else besides public namespaces
+		if (tree.Children[0]->Node.GetLexeme() == "export")
+		{
+			firstIndex = 1;
+		}
+
+		string indent(indentation * SpacesPerIndent, ' ');
+		stream << indent;
+		stream << "namespace" << ' ' << tree.Children[firstIndex + 1]->Node.GetLexeme() << endl;
 		stream << indent << '{' << endl;
-		TranslateSubtree(*tree.Children[3], stream, indentation + 1);
+		TranslateSubtree(*tree.Children[firstIndex + 3], stream, indentation + 1);
 		stream << indent << '}' << endl;
 	}
 }
@@ -535,14 +641,16 @@ map<string, function<void(const SyntaxTree&, ostream&, int)>> TranslatorFunction
 	{ "VarDeclaration", translate::TranslateVarDeclaration },
 	{ "Class", translate::TranslateClass },
 	{ "ClassBody", translate::TranslateClassBody },
+	{ "ClassMember", translate::TranslateClassMember },
 	{ "ClassMethod", translate::TranslateClassMethod },
 	{ "ClassField", translate::TranslateClassField },
-	{ "IdList", translate::TranslateIdList },
+	{ "IdList", translate::TranslateCommaList },
 	{ "Module", translate::TranslateModule },
 
 	{ "Expression", translate::TranslateExpression },
 	{ "ExpressionHeader", translate::TranslateExpressionHeader },
-	{ "LValue", translate::TranslateLvalue }
+	{ "LValue", translate::TranslateLvalue },
+	{ "ExpressionList", translate::TranslateCommaList },
 };
 
 
@@ -566,7 +674,6 @@ string TsToCSharp::Translate(string source)
 	LexicalAnalyzer lexer;
 	auto tokenizedSource = lexer.Tokenize(source, true);
 	auto parseTree = this->parser.Parse(tokenizedSource);
-	cout << *parseTree;
 	stringstream stream;
 	TranslateSubtree(*parseTree, stream, 0);
 	return stream.str();
