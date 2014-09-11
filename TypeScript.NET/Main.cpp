@@ -44,7 +44,7 @@ int main(int argc, char** argv)
 	}
 	outputFile.close();
 	cout << "Done." << endl;
-	cout << endl << "Press any key to continue" << endl;
+	cout << endl << "Press ENTER to continue" << endl;
 	cin.get();
 
 	return 0;

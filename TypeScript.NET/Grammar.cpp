@@ -302,7 +302,7 @@ set<Item>& Grammar::Closure(set<Item>& setOfItems)
 				{
 					int ruleIndex = distance(bodies.begin(), it);
 					Item newItem(nonterminal, terminal, ruleIndex, 0);
-					setOfItems.insert(newItem);/*t,jgrtjhrthgrtj*/
+					setOfItems.insert(newItem);
 				}
 			}
 		}
@@ -398,7 +398,7 @@ void Grammar::ComputeItems()
 int ComputeItemSetCoreHash(const set<Item>& items)
 {
 	static hash<string> hashString;
-	set<unsigned long> totalHash;
+	set<unsigned long> perItemHash;
 
 	for (const Item& item : items)
 	{
@@ -407,11 +407,11 @@ int ComputeItemSetCoreHash(const set<Item>& items)
 		hash = hash * 31 + item.RuleIndex;
 		hash = hash * 31 + item.DotIndex;
 
-		totalHash.insert(hash);
+		perItemHash.insert(hash);
 	}
 
 	unsigned long finalHash = 23;
-	for (auto hash : totalHash)
+	for (auto hash : perItemHash)
 	{
 		finalHash = finalHash * 31 + hash;
 	}
@@ -422,7 +422,6 @@ void Grammar::ComputeLR1Items()
 {
 	this->ComputeItems();
 	map<unsigned long, vector<int>> groups;
-	// Start from the 2nd item since we want to preserve the I0 at index 0 in the merged set
 	for (auto i = 0; i < this->items.size(); i++)
 	{
 		auto hash = ComputeItemSetCoreHash(this->items[i]);
